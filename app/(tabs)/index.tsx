@@ -359,7 +359,7 @@ export default function Home() {
           ),
           headerTitle: () => (
             <View className="flex-row items-center justify-center flex-1">
-              <Octicons name="flame" size={16} color="black" />
+              <Image source={require('../../assets/icons/fire.png')} style={{ width: 16, height: 16 }} />
               <Text className="text-black font-bold text-lg ml-2">
                 {streak ? streak.currentStreak.days : '0'}
               </Text>
