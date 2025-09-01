@@ -136,11 +136,11 @@ export default function Home() {
           ),
           headerTitle: () => (
             <View className="flex-row items-center justify-center flex-1">
-              <Octicons name="flame" size={24} color="#f97316" />
-              <Text className="text-orange-500 font-bold text-lg ml-2">
+              <Octicons name="flame" size={24} color="black" />
+              <Text className="text-black font-bold text-lg ml-2">
                 {streak ? streak.currentStreak.days : '0'}
               </Text>
-              <Text className="text-gray-500 text-sm ml-2">
+              <Text className="text-black text-sm ml-2">
                 ({streak ? streak.totalContributions : '0'} total)
               </Text>
             </View>
