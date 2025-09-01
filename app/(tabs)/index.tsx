@@ -145,6 +145,14 @@ export default function Home() {
               </Text>
             </View>
           ),
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={() => router.push('/notifications')}
+              className="mr-4"
+            >
+              <Octicons name="bell" size={20} color="black" />
+            </TouchableOpacity>
+          ),
           headerTitleAlign: 'center' as const,
         }} 
       />
