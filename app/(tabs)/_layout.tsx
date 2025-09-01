@@ -1,12 +1,9 @@
-import { Link, Redirect, Tabs, useRootNavigationState } from 'expo-router';
-import { Text, TouchableOpacity } from 'react-native';
+import { Redirect, Tabs, useRootNavigationState } from 'expo-router';
 
-import { HeaderButton } from '../../components/HeaderButton';
-import { TabBarIcon } from '../../components/TabBarIcon';
 import { useAuthStore } from '~/store/auth';
+import Octicons from '@expo/vector-icons/Octicons';
 
 export default function TabLayout() {
-  const signOut = useAuthStore((s) => s.signOut);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const rootState = useRootNavigationState();
   const isReady = !!rootState?.key;
@@ -17,29 +14,23 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: 'black',
+        tabBarStyle: { borderTopColor: '#000000', borderTopWidth: 0.5 },
+        headerShadowVisible: false,
+
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
+          tabBarIcon: ({ color }) => <Octicons name="home" color={color} size={24} />,
+          headerShadowVisible: false
         }}
       />
       <Tabs.Screen
-        name="two"
+        name="habit"
         options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <TouchableOpacity onPress={signOut} style={{ paddingRight: 12 }}>
-              <Text>Sign out</Text>
-            </TouchableOpacity>
-          ),
+          title: 'Habit',
+          tabBarIcon: ({ color }) => <Octicons name="clock" color={color} size={24} />,
         }}
       />
   </Tabs>

@@ -1,6 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account } from '~/lib/appwrite';
 import Octicons from '@expo/vector-icons/Octicons';
@@ -16,6 +16,7 @@ type GitHubRepo = {
   updated_at: string;
   private: boolean;
   fork: boolean;
+  owner: { login: string };
 };
 
 type GitHubStreak = {
@@ -57,6 +58,45 @@ export default function Home() {
   const CELL_RADIUS = 4;
   const CELL_GAP = 5;
   const WEEK_GAP = 6;
+  // Repo languages map: repoId -> top languages
+  const [repoLanguages, setRepoLanguages] = useState<Record<number, { name: string; color: string; bytes: number }[]>>({});
+  const languageColors = useMemo<Record<string, string>>(() => ({
+    TypeScript: '#3178c6',
+    JavaScript: '#f1e05a',
+    Python: '#3572A5',
+    Java: '#b07219',
+    Go: '#00ADD8',
+    Ruby: '#701516',
+    PHP: '#4F5D95',
+    C: '#555555',
+    'C++': '#f34b7d',
+    'C#': '#178600',
+    Swift: '#F05138',
+    Kotlin: '#A97BFF',
+    Dart: '#00B4AB',
+    Rust: '#DEA584',
+    Shell: '#89e051',
+    Scala: '#c22d40',
+    HTML: '#e34c26',
+    CSS: '#563d7c',
+    SCSS: '#c6538c',
+    Vue: '#41B883',
+    Svelte: '#ff3e00',
+    R: '#198CE7',
+    Elixir: '#6e4a7e',
+    Haskell: '#5e5086',
+    'Objective-C': '#438eff',
+    Zig: '#ec915c',
+    Lua: '#000080',
+    Perl: '#0298c3',
+    GLSL: '#5686ae',
+    Solidity: '#AA6746',
+    TeX: '#3D6117',
+  }), []);
+  const getLangAbbrev = (name: string) => {
+    const map: Record<string, string> = { TypeScript: 'TS', JavaScript: 'JS', Python: 'PY', 'C++': 'C++', 'C#': 'C#' };
+    return map[name] || (name.length <= 3 ? name.toUpperCase() : name.slice(0, 2).toUpperCase());
+  };
 
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
@@ -139,6 +179,26 @@ export default function Home() {
     }
   }, []);
 
+  const fetchLanguagesForRepos = useCallback(async (reposList: GitHubRepo[]) => {
+    const entries = await Promise.all(
+      reposList.map(async (r) => {
+        try {
+          const res = await fetch(`https://api.github.com/repos/${encodeURIComponent(r.owner.login)}/${encodeURIComponent(r.name)}/languages`);
+          if (!res.ok) return [r.id, []] as const;
+          const json = (await res.json()) as Record<string, number>;
+          const items = Object.entries(json)
+            .map(([name, bytes]) => ({ name, bytes, color: languageColors[name] || '#9ca3af' }))
+            .sort((a, b) => b.bytes - a.bytes)
+            .slice(0, 3);
+          return [r.id, items] as const;
+        } catch {
+          return [r.id, []] as const;
+        }
+      })
+    );
+    return Object.fromEntries(entries) as Record<number, { name: string; color: string; bytes: number }[]>;
+  }, [languageColors]);
+
   const ensureMonthLoaded = useCallback(async (login: string, identity: any, offset: number) => {
     const existing = monthData[offset];
     if (!existing || (existing && !existing.loading && existing.weeks.length === 0 && !existing.error)) {
@@ -170,6 +230,13 @@ export default function Home() {
             if (reposRes.ok) {
               const repoData = await reposRes.json();
               setRepos(repoData as GitHubRepo[]);
+              // Fetch languages for these repos in background
+              try {
+                const langs = await fetchLanguagesForRepos(repoData as GitHubRepo[]);
+                setRepoLanguages(langs);
+              } catch (e) {
+                console.warn('Failed to fetch repo languages:', e);
+              }
             } else {
               console.warn('Failed to fetch repos:', reposRes.status);
             }
@@ -196,7 +263,7 @@ export default function Home() {
     } finally {
       setLoading(false);
     }
-  }, [ensureMonthLoaded]);
+  }, [ensureMonthLoaded, fetchLanguagesForRepos]);
 
   // Helpers to compute month ranges and fetch per-month contributions
   const getMonthRange = (offset: number) => {
@@ -209,27 +276,67 @@ export default function Home() {
 
   // removed duplicate fetchMonth/ensureMonthLoaded definitions
 
-  const renderRepo = ({ item }: { item: GitHubRepo }) => (
-    <View className="py-3 px-4 mb-2 bg-gray-50 rounded-lg border border-gray-200">
-      <View className="flex-row justify-between items-start mb-1">
-        <Text className="text-base font-semibold text-gray-900 flex-1">{item.name}</Text>
-        <View className="flex-row items-center gap-2">
-          {item.language && (
-            <Text className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
-              {item.language}
-            </Text>
-          )}
-          <Text className="text-xs text-gray-600">⭐ {item.stargazers_count}</Text>
+  const renderRepo = ({ item }: { item: GitHubRepo }) => {
+    const langs = repoLanguages[item.id];
+    return (
+      <View className="py-3 px-4 mb-2 bg-gray-50 rounded-lg border border-gray-200">
+        <View className="flex-row justify-between items-start mb-1">
+          <Text className="text-base font-semibold text-gray-900 flex-1">{item.name}</Text>
+          <View className="flex-row items-center">
+            {/* Stacked language badges */}
+            {Array.isArray(langs) && langs.length > 0 ? (
+              <View className="flex-row items-center" style={{ marginRight: 6 }}>
+                {langs.map((l, i) => (
+                  <View
+                    key={l.name + i}
+                    style={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 9,
+                      backgroundColor: l.color,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginLeft: i === 0 ? 0 : -6,
+                      borderWidth: 2,
+                      borderColor: '#fff',
+                    }}
+                    accessibilityLabel={`${l.name}`}
+                  >
+                    <Text className="text-[8px] text-white font-bold">{getLangAbbrev(l.name)}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : item.language ? (
+              <View className="flex-row items-center" style={{ marginRight: 6 }}>
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    backgroundColor: languageColors[item.language] || '#9ca3af',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderWidth: 2,
+                    borderColor: '#fff',
+                  }}
+                  accessibilityLabel={`${item.language}`}
+                >
+                  <Text className="text-[8px] text-white font-bold">{getLangAbbrev(item.language)}</Text>
+                </View>
+              </View>
+            ) : null}
+            <Text className="text-xs text-gray-600">⭐ {item.stargazers_count}</Text>
+          </View>
         </View>
+        {item.description && (
+          <Text className="text-sm text-gray-700 mb-1 leading-5">{item.description}</Text>
+        )}
+        <Text className="text-xs text-gray-400">
+          Updated {new Date(item.updated_at).toLocaleDateString()}
+        </Text>
       </View>
-      {item.description && (
-        <Text className="text-sm text-gray-700 mb-1 leading-5">{item.description}</Text>
-      )}
-      <Text className="text-xs text-gray-400">
-        Updated {new Date(item.updated_at).toLocaleDateString()}
-      </Text>
-    </View>
-  );
+    );
+  };
 
   // Load data when user becomes available
   useEffect(() => {
@@ -242,7 +349,7 @@ export default function Home() {
     <>
       <Stack.Screen 
         options={{ 
-          title: '',
+          title: 'Home',
           headerLeft: () => (
             user?.avatarUrl ? (
               <TouchableOpacity onPress={() => router.push('/profile')}>
@@ -272,7 +379,7 @@ export default function Home() {
           headerTitleAlign: 'center' as const,
         }} 
       />
-      <View className="flex-1 p-6">
+      <View className="flex-1 p-2 bg-gray-50">
         {user ? (
           <>
             {/* Monthly Contributions Section with paging */}
@@ -374,7 +481,7 @@ export default function Home() {
 
             {/* GitHub Repos Section */}
             <View className="flex-1">
-              <View className="flex-row justify-between items-center mb-4">
+              <View className="flex-row justify-between items-center mb-2">
                 <Text className="text-lg font-bold">Recent Repositories</Text>
                 {loading && <ActivityIndicator size="small" />}
                 {!loading && (

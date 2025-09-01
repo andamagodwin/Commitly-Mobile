@@ -57,7 +57,7 @@ export default function Settings() {
   };
   return (
     <>
-      <Stack.Screen options={{ title: 'Settings' }} />
+      <Stack.Screen options={{ title: 'Habit' }} />
       <View style={styles.container}>
         <Text style={styles.heading}>Account</Text>
         <TouchableOpacity onPress={signOut} style={styles.button}>
