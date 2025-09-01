@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOp
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account } from '~/lib/appwrite';
+import Octicons from '@expo/vector-icons/Octicons';
 
 type GitHubRepo = {
   id: number;
@@ -16,11 +17,27 @@ type GitHubRepo = {
   fork: boolean;
 };
 
+type GitHubStreak = {
+  totalContributions: number;
+  firstContribution: string;
+  longestStreak: {
+    start: string;
+    end: string;
+    days: number;
+  };
+  currentStreak: {
+    start: string;
+    end: string;
+    days: number;
+  };
+};
+
 export default function Home() {
   const user = useAuthStore((s) => s.user);
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [loading, setLoading] = useState(false);
   const [githubLogin, setGithubLogin] = useState<string | null>(null);
+  const [streak, setStreak] = useState<GitHubStreak | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -59,6 +76,19 @@ export default function Home() {
             } else {
               console.warn('Failed to fetch repos:', reposRes.status);
             }
+            
+            // Fetch streak data
+            try {
+              const streakRes = await fetch(`https://api.franznkemaka.com/github-streak/stats/${encodeURIComponent(login)}`);
+              if (streakRes.ok) {
+                const streakData = await streakRes.json();
+                setStreak(streakData as GitHubStreak);
+              } else {
+                console.warn('Failed to fetch streak data:', streakRes.status);
+              }
+            } catch (e) {
+              console.warn('Failed to fetch streak data:', e);
+            }
           }
         }
       } catch (e) {
@@ -87,7 +117,24 @@ export default function Home() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Home' }} />
+      <Stack.Screen 
+        options={{ 
+          title: '',
+          headerLeft: () => (
+            user?.avatarUrl ? (
+              <Image source={{ uri: user.avatarUrl }} style={styles.headerAvatar} />
+            ) : null
+          ),
+          headerTitle: () => (
+            <View style={styles.headerCenter}>
+              <Octicons name="flame" size={24} color="#f97316" />
+              <Text style={styles.streakText}>
+                {streak ? streak.currentStreak.days : '0'}
+              </Text>
+            </View>
+          ),
+        }} 
+      />
       <View style={styles.container}>
         {user ? (
           <>
@@ -139,6 +186,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginLeft: 16,
+  },
+  headerCenter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  streakText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#f97316',
   },
   profileSection: {
     flexDirection: 'row',
