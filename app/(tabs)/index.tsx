@@ -52,6 +52,11 @@ export default function Home() {
   const { width } = useWindowDimensions();
   const horizontalPadding = 24; // matches container p-6
   const itemWidth = Math.max(280, width - horizontalPadding * 2);
+  // Contribution cell styling
+  const CELL_SIZE = 16;
+  const CELL_RADIUS = 4;
+  const CELL_GAP = 5;
+  const WEEK_GAP = 6;
 
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
@@ -337,20 +342,26 @@ export default function Home() {
                       {!data?.loading && !data?.error && (data?.weeks?.length || 0) > 0 && (
                         <View className="flex-row pr-2">
                           {data!.weeks.map((week, wi) => (
-                            <View key={week.firstDay + wi} className="mr-1">
-                              {week.days.map((day) => (
-                                <View
-                                  key={day.date}
-                                  style={{
-                                    backgroundColor: day.color || '#ebedf0',
-                                    width: 12,
-                                    height: 12,
-                                    borderRadius: 2,
-                                    marginBottom: 4,
-                                  }}
-                                  accessibilityLabel={`${day.date}: ${day.count} contributions`}
-                                />
-                              ))}
+                            <View key={week.firstDay + wi} style={{ marginRight: WEEK_GAP }}>
+                              {week.days.map((day) => {
+                                const bg = day.color || '#ebedf0';
+                                const border = day.count > 0 ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.06)';
+                                return (
+                                  <View
+                                    key={day.date}
+                                    style={{
+                                      backgroundColor: bg,
+                                      width: CELL_SIZE,
+                                      height: CELL_SIZE,
+                                      borderRadius: CELL_RADIUS,
+                                      marginBottom: CELL_GAP,
+                                      borderWidth: 1,
+                                      borderColor: border,
+                                    }}
+                                    accessibilityLabel={`${day.date}: ${day.count} contributions`}
+                                  />
+                                );
+                              })}
                             </View>
                           ))}
                         </View>
