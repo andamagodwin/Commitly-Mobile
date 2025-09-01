@@ -1,9 +1,10 @@
 import { Stack } from 'expo-router';
-import { Image, StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account } from '~/lib/appwrite';
 import Octicons from '@expo/vector-icons/Octicons';
+import '../../global.css';
 
 type GitHubRepo = {
   id: number;
@@ -102,16 +103,24 @@ export default function Home() {
   };
 
   const renderRepo = ({ item }: { item: GitHubRepo }) => (
-    <View style={styles.repoItem}>
-      <View style={styles.repoHeader}>
-        <Text style={styles.repoName}>{item.name}</Text>
-        <View style={styles.repoMeta}>
-          {item.language && <Text style={styles.language}>{item.language}</Text>}
-          <Text style={styles.stars}>⭐ {item.stargazers_count}</Text>
+    <View className="py-3 px-4 mb-2 bg-gray-50 rounded-lg border border-gray-200">
+      <View className="flex-row justify-between items-start mb-1">
+        <Text className="text-base font-semibold text-gray-900 flex-1">{item.name}</Text>
+        <View className="flex-row items-center gap-2">
+          {item.language && (
+            <Text className="text-xs text-gray-600 bg-gray-200 px-2 py-1 rounded">
+              {item.language}
+            </Text>
+          )}
+          <Text className="text-xs text-gray-600">⭐ {item.stargazers_count}</Text>
         </View>
       </View>
-      {item.description && <Text style={styles.repoDesc}>{item.description}</Text>}
-      <Text style={styles.updated}>Updated {new Date(item.updated_at).toLocaleDateString()}</Text>
+      {item.description && (
+        <Text className="text-sm text-gray-700 mb-1 leading-5">{item.description}</Text>
+      )}
+      <Text className="text-xs text-gray-400">
+        Updated {new Date(item.updated_at).toLocaleDateString()}
+      </Text>
     </View>
   );
 
@@ -122,42 +131,46 @@ export default function Home() {
           title: '',
           headerLeft: () => (
             user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} style={styles.headerAvatar} />
+              <Image source={{ uri: user.avatarUrl }} className="w-8 h-8 rounded-full ml-4" />
             ) : null
           ),
           headerTitle: () => (
-            <View style={styles.headerCenter}>
+            <View className="flex-row items-center justify-center flex-1">
               <Octicons name="flame" size={24} color="#f97316" />
-              <Text style={styles.streakText}>
+              <Text className="text-orange-500 font-bold text-lg ml-2">
                 {streak ? streak.currentStreak.days : '0'}
+              </Text>
+              <Text className="text-gray-500 text-sm ml-2">
+                ({streak ? streak.totalContributions : '0'} total)
               </Text>
             </View>
           ),
+          headerTitleAlign: 'center' as const,
         }} 
       />
-      <View style={styles.container}>
+      <View className="flex-1 p-6">
         {user ? (
           <>
             {/* User Profile Section */}
-            <View style={styles.profileSection}>
+            <View className="flex-row items-center mb-6 pb-4 border-b border-gray-200">
               {user.avatarUrl ? (
-                <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+                <Image source={{ uri: user.avatarUrl }} className="w-16 h-16 rounded-full mr-4" />
               ) : null}
-              <View style={styles.userInfo}>
-                <Text style={styles.welcomeText}>Welcome, {user.name || 'User'}</Text>
-                {user.email && <Text style={styles.email}>{user.email}</Text>}
-                {githubLogin && <Text style={styles.githubLogin}>@{githubLogin}</Text>}
+              <View className="flex-1">
+                <Text className="text-xl font-bold mb-1">Welcome, {user.name || 'User'}</Text>
+                {user.email && <Text className="text-sm text-gray-500 mb-1">{user.email}</Text>}
+                {githubLogin && <Text className="text-sm text-blue-600 font-medium">@{githubLogin}</Text>}
               </View>
             </View>
 
             {/* GitHub Repos Section */}
-            <View style={styles.reposSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Recent Repositories</Text>
+            <View className="flex-1">
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-lg font-bold">Recent Repositories</Text>
                 {loading && <ActivityIndicator size="small" />}
                 {!loading && (
-                  <TouchableOpacity onPress={fetchGithubInfo} style={styles.refreshButton}>
-                    <Text style={styles.refreshText}>Refresh</Text>
+                  <TouchableOpacity onPress={fetchGithubInfo} className="px-3 py-2 bg-gray-100 rounded-md">
+                    <Text className="text-xs text-gray-700 font-medium">Refresh</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -170,7 +183,7 @@ export default function Home() {
                   showsVerticalScrollIndicator={false}
                 />
               ) : !loading ? (
-                <Text style={styles.noRepos}>No repositories found</Text>
+                <Text className="text-center text-gray-500 italic mt-8">No repositories found</Text>
               ) : null}
             </View>
           </>
@@ -181,136 +194,3 @@ export default function Home() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-  headerAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginLeft: 16,
-  },
-  headerCenter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  streakText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#f97316',
-  },
-  profileSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#e5e7eb',
-  },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    marginRight: 16,
-  },
-  userInfo: {
-    flex: 1,
-  },
-  welcomeText: {
-    fontSize: 20,
-    fontWeight: '700',
-    marginBottom: 4,
-  },
-  email: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 2,
-  },
-  githubLogin: {
-    fontSize: 14,
-    color: '#2563eb',
-    fontWeight: '500',
-  },
-  reposSection: {
-    flex: 1,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
-  refreshButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 6,
-  },
-  refreshText: {
-    fontSize: 12,
-    color: '#374151',
-    fontWeight: '500',
-  },
-  repoItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  repoHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 4,
-  },
-  repoName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    flex: 1,
-  },
-  repoMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  language: {
-    fontSize: 12,
-    color: '#6b7280',
-    backgroundColor: '#e5e7eb',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  stars: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  repoDesc: {
-    fontSize: 14,
-    color: '#4b5563',
-    marginBottom: 4,
-    lineHeight: 18,
-  },
-  updated: {
-    fontSize: 12,
-    color: '#9ca3af',
-  },
-  noRepos: {
-    textAlign: 'center',
-    color: '#6b7280',
-    fontStyle: 'italic',
-    marginTop: 32,
-  },
-});
