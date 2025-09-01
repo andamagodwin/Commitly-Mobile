@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '~/store/auth';
@@ -37,7 +37,6 @@ export default function Home() {
   const user = useAuthStore((s) => s.user);
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [githubLogin, setGithubLogin] = useState<string | null>(null);
   const [streak, setStreak] = useState<GitHubStreak | null>(null);
 
   useEffect(() => {
@@ -66,7 +65,6 @@ export default function Home() {
         if (userRes.ok) {
           const userData = await userRes.json();
           login = userData?.login as string | undefined;
-          setGithubLogin(login || null);
           
           // Fetch public repos directly from GitHub API
           if (login) {
@@ -131,12 +129,14 @@ export default function Home() {
           title: '',
           headerLeft: () => (
             user?.avatarUrl ? (
-              <Image source={{ uri: user.avatarUrl }} className="w-8 h-8 rounded-full ml-4" />
+              <TouchableOpacity onPress={() => router.push('/profile')}>
+                <Image source={{ uri: user.avatarUrl }} className="w-8 h-8 rounded-full ml-4" />
+              </TouchableOpacity>
             ) : null
           ),
           headerTitle: () => (
             <View className="flex-row items-center justify-center flex-1">
-              <Octicons name="flame" size={24} color="black" />
+              <Octicons name="flame" size={16} color="black" />
               <Text className="text-black font-bold text-lg ml-2">
                 {streak ? streak.currentStreak.days : '0'}
               </Text>
@@ -151,18 +151,6 @@ export default function Home() {
       <View className="flex-1 p-6">
         {user ? (
           <>
-            {/* User Profile Section */}
-            <View className="flex-row items-center mb-6 pb-4 border-b border-gray-200">
-              {user.avatarUrl ? (
-                <Image source={{ uri: user.avatarUrl }} className="w-16 h-16 rounded-full mr-4" />
-              ) : null}
-              <View className="flex-1">
-                <Text className="text-xl font-bold mb-1">Welcome, {user.name || 'User'}</Text>
-                {user.email && <Text className="text-sm text-gray-500 mb-1">{user.email}</Text>}
-                {githubLogin && <Text className="text-sm text-blue-600 font-medium">@{githubLogin}</Text>}
-              </View>
-            </View>
-
             {/* GitHub Repos Section */}
             <View className="flex-1">
               <View className="flex-row justify-between items-center mb-4">
