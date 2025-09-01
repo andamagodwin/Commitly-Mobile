@@ -1,5 +1,5 @@
 import { Stack, router } from 'expo-router';
-import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account } from '~/lib/appwrite';
@@ -48,6 +48,10 @@ export default function Home() {
   const [monthPages, setMonthPages] = useState<number[]>([0, 1]); // 0 = current, 1 = previous
   type MonthData = { label: string; total: number; weeks: ContribWeek[]; loading: boolean; error?: string | null };
   const [monthData, setMonthData] = useState<Record<number, MonthData>>({});
+  const [currentMonthIndex, setCurrentMonthIndex] = useState(0);
+  const { width } = useWindowDimensions();
+  const horizontalPadding = 24; // matches container p-6
+  const itemWidth = Math.max(280, width - horizontalPadding * 2);
 
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
@@ -270,9 +274,18 @@ export default function Home() {
             <View className="mb-8">
               <View className="flex-row justify-between items-center mb-3">
                 <Text className="text-lg font-bold">Contributions</Text>
-                <TouchableOpacity onPress={fetchGithubInfo} className="px-3 py-2 bg-gray-100 rounded-md">
-                  <Text className="text-xs text-gray-700 font-medium">Refresh</Text>
-                </TouchableOpacity>
+                <View className="flex-row items-center">
+                  {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
+                  <TouchableOpacity onPress={() => {
+                    if (ghLogin && ghIdentity) {
+                      fetchMonth(ghLogin, ghIdentity, currentMonthIndex);
+                    } else {
+                      fetchGithubInfo();
+                    }
+                  }} className="ml-3 px-3 py-2 bg-gray-100 rounded-md">
+                    <Text className="text-xs text-gray-700 font-medium">Refresh</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <FlatList
@@ -281,21 +294,31 @@ export default function Home() {
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onEndReachedThreshold={0.6}
-                onEndReached={() => {
-                  // Append next previous month
-                  const max = monthPages.length ? Math.max(...monthPages) : 0;
-                  const next = max + 1;
-                  setMonthPages((prev) => (prev.includes(next) ? prev : [...prev, next]));
-                  if (ghLogin) {
-                    fetchMonth(ghLogin, ghIdentity, next);
+                decelerationRate="fast"
+                snapToInterval={itemWidth}
+                snapToAlignment="start"
+                getItemLayout={(_data, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
+                onMomentumScrollEnd={(e) => {
+                  const x = e.nativeEvent.contentOffset.x;
+                  const idx = Math.round(x / itemWidth);
+                  if (!Number.isNaN(idx)) {
+                    setCurrentMonthIndex(idx);
+                    // Append next previous month when reaching last loaded page
+                    const max = monthPages.length ? Math.max(...monthPages) : 0;
+                    if (idx >= max) {
+                      const next = max + 1;
+                      setMonthPages((prev) => (prev.includes(next) ? prev : [...prev, next]));
+                      if (ghLogin && ghIdentity) {
+                        fetchMonth(ghLogin, ghIdentity, next);
+                      }
+                    }
                   }
                 }}
                 renderItem={({ item: offset }) => {
                   const data = monthData[offset];
                   const placeholderLabel = getMonthRange(offset).label;
                   return (
-                    <View className="mr-4" style={{ width: 320 }}>
+                    <View style={{ width: itemWidth }}>
                       <View className="flex-row items-center mb-2">
                         <Text className="text-base font-semibold">
                           {data?.label || placeholderLabel}
@@ -312,7 +335,7 @@ export default function Home() {
                         <Text className="text-gray-500 text-sm italic">{data.error}</Text>
                       )}
                       {!data?.loading && !data?.error && (data?.weeks?.length || 0) > 0 && (
-                        <View className="flex-row">
+                        <View className="flex-row pr-2">
                           {data!.weeks.map((week, wi) => (
                             <View key={week.firstDay + wi} className="mr-1">
                               {week.days.map((day) => (
