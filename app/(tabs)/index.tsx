@@ -359,13 +359,13 @@ export default function Home() {
           ),
           headerTitle: () => (
             <View className="flex-row items-center justify-center flex-1">
-              <Image source={require('../../assets/icons/fire.png')} style={{ width: 16, height: 16 }} />
+              <Image source={require('../../assets/icons/fire.png')} style={{ width: 20, height: 20 }} />
               <Text className="text-black font-bold text-lg ml-2">
                 {streak ? streak.currentStreak.days : '0'}
               </Text>
-              <Text className="text-black text-sm ml-2">
+              {/* <Text className="text-black text-sm ml-2">
                 ({streak ? streak.totalContributions : '0'} total)
-              </Text>
+              </Text> */}
             </View>
           ),
           headerRight: () => (
