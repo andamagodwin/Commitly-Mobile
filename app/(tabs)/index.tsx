@@ -39,10 +39,10 @@ export default function Home() {
   const horizontalPadding = 24; // matches container p-6
   const itemWidth = Math.max(280, width - horizontalPadding * 2);
   // Contribution cell styling
-  const CELL_SIZE = 16;
+  const CELL_SIZE = 24;
   const CELL_RADIUS = 4;
-  const CELL_GAP = 5;
-  const WEEK_GAP = 6;
+  const CELL_GAP = 4;
+  const WEEK_GAP = 20;
 
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
@@ -243,7 +243,7 @@ export default function Home() {
                       fetchGithubInfo();
                     }
                   }} className="ml-3 px-3 py-2 bg-white rounded-md">
-                    <Octicons name="sync" size={16} color="gray" />
+                    <Octicons name="sync" size={20} color="black" />
                   </TouchableOpacity>
                 </View>
               </View>
