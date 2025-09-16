@@ -359,8 +359,8 @@ export default function Home() {
           ),
           headerTitle: () => (
             <View className="flex-row items-center justify-center flex-1">
-              <Image source={require('../../assets/icons/fire.png')} style={{ width: 20, height: 20 }} />
-              <Text className="text-black font-bold text-lg ml-2">
+              <Image source={require('../../assets/icons/fire.png')} style={{ width: 30, height: 30 }} />
+              <Text className="text-black font-bold text-lg ">
                 {streak ? streak.currentStreak.days : '0'}
               </Text>
               {/* <Text className="text-black text-sm ml-2">
@@ -373,7 +373,7 @@ export default function Home() {
               onPress={() => router.push('/notifications')}
               className="mr-4"
             >
-              <Octicons name="bell" size={20} color="black" />
+              <Octicons name="bell" style={{ fontWeight: 'bold' }} size={20} color="black" />
             </TouchableOpacity>
           ),
           headerTitleAlign: 'center' as const,

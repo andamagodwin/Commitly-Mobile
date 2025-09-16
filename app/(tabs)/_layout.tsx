@@ -13,8 +13,9 @@ export default function TabLayout() {
       {shouldRedirect ? <Redirect href="/login" /> : null}
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: 'black',
-        tabBarStyle: { borderTopColor: '#000000', borderTopWidth: 0.5 },
+        tabBarActiveTintColor: '#4ADE80',
+        tabBarInactiveTintColor: 'black',
+        tabBarStyle: { borderTopColor: '#4ADE80', borderTopWidth: 0.5 },
         headerShadowVisible: false,
 
       }}>
