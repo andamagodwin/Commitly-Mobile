@@ -5,9 +5,12 @@ import Octicons from '@expo/vector-icons/Octicons';
 
 export default function TabLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const rootState = useRootNavigationState();
   const isReady = !!rootState?.key;
-  const shouldRedirect = isReady && !isAuthenticated;
+  
+  // Don't redirect while still loading auth state
+  const shouldRedirect = isReady && !isLoading && !isAuthenticated;
   return (
     <>
       {shouldRedirect ? <Redirect href="/login" /> : null}
