@@ -379,13 +379,13 @@ export default function Home() {
           headerTitleAlign: 'center' as const,
         }} 
       />
-      <View className="flex-1 p-2 bg-gray-50">
+      <View className="flex-1 p-2 bg-white">
         {user ? (
           <>
             {/* Monthly Contributions Section with paging */}
-            <View className="mb-8">
+            <View className="p-4 bg-green-400 rounded-xl mb-6">
               <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-lg font-bold">Contributions</Text>
+                <Text className="text-lg font-semibold text-white">Monthly Contributions</Text>
                 <View className="flex-row items-center">
                   {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
                   <TouchableOpacity onPress={() => {
@@ -394,8 +394,8 @@ export default function Home() {
                     } else {
                       fetchGithubInfo();
                     }
-                  }} className="ml-3 px-3 py-2 bg-gray-100 rounded-md">
-                    <Text className="text-xs text-gray-700 font-medium">Refresh</Text>
+                  }} className="ml-3 px-3 py-2 bg-white rounded-md">
+                    <Octicons name="sync" size={16} color="gray" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -432,10 +432,10 @@ export default function Home() {
                   return (
                     <View style={{ width: itemWidth }}>
                       <View className="flex-row items-center mb-2">
-                        <Text className="text-base font-semibold">
+                        <Text className="text-base text-white font-semibold">
                           {data?.label || placeholderLabel}
                         </Text>
-                        <Text className="text-sm text-gray-600 ml-2">
+                        <Text className="text-sm text-white ml-2">
                           {typeof data?.total === 'number' ? `(${data.total})` : ''}
                         </Text>
                       </View>
