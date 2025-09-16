@@ -206,14 +206,15 @@ export default function Home() {
             ) : null
           ),
           headerTitle: () => (
-            <View className="flex-row items-center justify-center flex-1">
-              <Image source={require('../../assets/icons/fire.png')} style={{ width: 30, height: 30 }} />
-              <Text className="text-black font-bold text-lg ">
-                {streak ? streak.currentStreak.days : '0'}
-              </Text>
-              {/* <Text className="text-black text-sm ml-2">
-                ({streak ? streak.totalContributions : '0'} total)
-              </Text> */}
+            <View className="flex-row items-center justify-space-between flex-1">
+              <View className = "flex-row items-center justify-center rounded-full px-3 py-1">
+                <Image source={require('../../assets/icons/flame-hot.png')} style={{ width: 30, height: 30 }} />
+                <Text className="text-black font-bold text-lg ">
+                  {streak ? streak.currentStreak.days : '0'}
+                </Text>
+              </View>
+              
+              
             </View>
           ),
           headerRight: () => (
