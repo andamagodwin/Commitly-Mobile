@@ -31,6 +31,14 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="repos"
+        options={{
+          title: 'Repos',
+          tabBarIcon: ({ color }) => <Octicons name="repo" color={color} size={24} />,
+          headerShadowVisible: false
+        }}
+      />
+      <Tabs.Screen
         name="habit"
         options={{
           title: 'Habit',
