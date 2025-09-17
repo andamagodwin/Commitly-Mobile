@@ -28,11 +28,24 @@ export type AppwriteUser = Models.User<Models.Preferences>;
 export function subscribeToProfileUpdates(userId: string, callback: (points: number) => void) {
   const channel = `databases.${APPWRITE_DATABASE_ID}.collections.${APPWRITE_PROFILES_COLLECTION_ID}.documents`;
   
+  console.log('🔄 Subscribing to channel:', channel);
+  console.log('👤 Looking for userId:', userId);
+  
   return appwriteClient.subscribe(channel, (response: any) => {
+    console.log('📡 Real-time event received:', {
+      event: response.events?.[0] || 'unknown',
+      payload: response.payload
+    });
+    
     // Check if this update is for our user
     if (response.payload && response.payload.userId === userId) {
-      console.log('🎉 Real-time points update received!', response.payload.points);
+      console.log('✅ Points update for current user!', response.payload.points);
       callback(response.payload.points || 0);
+    } else {
+      console.log('❌ Update not for current user:', {
+        payloadUserId: response.payload?.userId,
+        expectedUserId: userId
+      });
     }
   });
 }

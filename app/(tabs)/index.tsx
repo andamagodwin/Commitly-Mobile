@@ -3,7 +3,7 @@ import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWi
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
-import { getOrCreateProfile, updateProfileWithGitHubUsername } from '~/lib/profileService';
+import { getOrCreateProfile, updateProfileWithGitHubUsername, addPoints } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
 
@@ -301,6 +301,21 @@ export default function Home() {
                 <Text className="text-lg font-semibold text-white">Monthly Contributions</Text>
                 <View className="flex-row items-center">
                   {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
+                  
+                  {/* Test Real-time Button */}
+                  <TouchableOpacity onPress={async () => {
+                    if (user?.id) {
+                      try {
+                        console.log('🧪 Testing real-time by adding 25 points...');
+                        await addPoints(user.id, 25);
+                        console.log('✅ Points added to database');
+                      } catch (e) {
+                        console.error('❌ Failed to add points:', e);
+                      }
+                    }
+                  }} className="px-3 py-2 bg-yellow-400 rounded-md mr-2">
+                    <Text className="text-xs font-semibold text-black">Test +25</Text>
+                  </TouchableOpacity>
                   
                   {/* Sync Button */}
                   <TouchableOpacity onPress={() => {
