@@ -228,6 +228,8 @@ export default function Home() {
           headerTitleAlign: 'center' as const,
         }} 
       />
+
+
       <View className="flex-1 p-2 bg-white">
         {user ? (
           <>
@@ -248,7 +250,7 @@ export default function Home() {
                   </TouchableOpacity>
                 </View>
               </View>
-
+              
               <FlatList
                 data={monthPages}
                 keyExtractor={(o) => `month-${o}`}
