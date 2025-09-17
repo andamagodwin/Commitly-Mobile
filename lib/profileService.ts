@@ -33,12 +33,10 @@ export async function getOrCreateProfile(userId: string, data?: Partial<Profile>
   }
 
   // Create a new profile with owner permissions
-  const now = new Date().toISOString();
   const payload: any = {
     userId,
     points: 0,
     lastCommitAt: null,
-
     ...data,
   };
   const permissions = [
@@ -63,7 +61,6 @@ export async function addPoints(userId: string, delta: number, context?: { lastC
   const newPoints = Math.max(0, (doc.points ?? 0) + delta);
   const updated = await databases.updateDocument(db, col, doc.$id, {
     points: newPoints,
-    updatedAt: new Date().toISOString(),
     ...(context?.lastCommitAt ? { lastCommitAt: context.lastCommitAt } : {}),
   });
   return normalize(updated as any);
@@ -76,6 +73,18 @@ export async function getPoints(userId: string): Promise<number> {
   if (existing.total === 0) return 0;
   const doc = existing.documents[0] as any;
   return typeof doc.points === 'number' ? doc.points : 0;
+}
+
+export async function awardCommitPoints(userId: string, commitSha?: string): Promise<Profile | null> {
+  try {
+    const now = new Date().toISOString();
+    const updatedProfile = await addPoints(userId, 25, { lastCommitAt: now });
+    console.log(`Awarded 25 points to user ${userId} for commit ${commitSha || 'unknown'}`);
+    return updatedProfile || null;
+  } catch (error) {
+    console.error('Failed to award commit points:', error);
+    return null;
+  }
 }
 
 function normalize(doc: any): Profile {
