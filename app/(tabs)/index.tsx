@@ -44,6 +44,10 @@ export default function Home() {
   const CELL_GAP = 4;
   const WEEK_GAP = 20;
 
+  // Greeting logic
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
     const { from, to, label } = getMonthRange(offset);
@@ -238,6 +242,14 @@ export default function Home() {
       <View className="flex-1 p-2 bg-white">
         {user ? (
           <>
+            {/* Greeting Section */}
+            <View className="px-4 py-3 mb-2">
+              <Text className="text-2xl">
+                {greeting}, {user?.name || (user as any)?.fullName || (user as any)?.username || ghLogin || 'there'}!
+              </Text>
+              <Text className="text-gray-600 mt-1">Keep your streak strong 🔥</Text>
+            </View>
+
             {/* Monthly Contributions Section with paging */}
             <View className="p-4 bg-green-400 rounded-xl mb-6">
               <View className="flex-row justify-between items-center mb-3">
