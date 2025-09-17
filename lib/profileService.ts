@@ -17,7 +17,7 @@ export type Profile = {
 // - name (string)
 // - avatarUrl (string)
 // - points (integer)
-// - lastCommitAt (datetime)
+// - lastCommitAt (datetime) test more
 
 // Note: createdAt is provided by Appwrite system timestamps
 
