@@ -26,6 +26,8 @@ export default function Login() {
 
   const completeFromUrl = useCallback(
     async (url: string) => {
+      // Guard: Only handle OAuth callback once
+      if ((completeFromUrl as any)._handledOnce) return;
       const parsed = Linking.parse(url);
       const userId = (parsed.queryParams?.userId as string) || '';
       const secret = (parsed.queryParams?.secret as string) || '';
@@ -37,12 +39,27 @@ export default function Login() {
       if (!userId || !secret) return;
       try {
         setBusy(true);
+        // If a session already exists, skip creating a new one
+        try {
+          const existing = await account.getSession('current');
+          if (existing?.$id) {
+            const me = await account.get();
+            await setAuth(
+              { sessionId: existing.$id },
+              { id: me.$id, name: me.name, email: me.email ?? null, avatarUrl: null }
+            );
+            (completeFromUrl as any)._handledOnce = true;
+            return;
+          }
+        } catch {}
+
         const session = await account.createSession({ userId, secret });
         const me = await account.get();
-    await setAuth(
+        await setAuth(
           { sessionId: session.$id },
           { id: me.$id, name: me.name, email: me.email ?? null, avatarUrl: null }
         );
+        (completeFromUrl as any)._handledOnce = true;
     // Navigation will happen via the auth-state effect once the root nav is ready
       } catch (e: any) {
         console.error(e);

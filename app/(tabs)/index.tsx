@@ -3,6 +3,7 @@ import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWi
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account } from '~/lib/appwrite';
+import { getOrCreateProfile } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
 
@@ -31,6 +32,7 @@ export default function Home() {
   const [streak, setStreak] = useState<GitHubStreak | null>(null);
   const [ghLogin, setGhLogin] = useState<string | undefined>(undefined);
   const [ghIdentity, setGhIdentity] = useState<any>(undefined);
+  const [points, setPoints] = useState<number>(0);
   const [monthPages, setMonthPages] = useState<number[]>([0, 1]); // 0 = current, 1 = previous
   type MonthData = { label: string; total: number; weeks: ContribWeek[]; loading: boolean; error?: string | null };
   const [monthData, setMonthData] = useState<Record<number, MonthData>>({});
@@ -46,7 +48,7 @@ export default function Home() {
 
   // Greeting logic
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+  const greeting = hour < 12 ? 'Good morning 🌞' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
 
   const fetchMonth = useCallback(async (login: string, identity: any, offset: number) => {
@@ -197,6 +199,23 @@ export default function Home() {
     }
   }, [user, fetchGithubInfo]);
 
+  // Ensure a profile exists and load points for the header
+  useEffect(() => {
+    const run = async () => {
+      try {
+        if (!user?.id) return;
+        const profile = await getOrCreateProfile(user.id, {
+          name: user.name ?? null,
+          avatarUrl: user.avatarUrl ?? null,
+        });
+        setPoints(profile.points ?? 0);
+      } catch (e) {
+        console.warn('Failed to load profile points', e);
+      }
+    };
+    run();
+  }, [user?.id, user?.name, user?.avatarUrl]);
+
   return (
     <>
       <Stack.Screen 
@@ -226,7 +245,7 @@ export default function Home() {
               {/* Bolt icon + points */}
               <View className="flex-row items-center mr-3">
                 <Image source={require('../../assets/icons/bolt.png')} style={{ width: 20, height: 20, marginRight: 4 }} />
-                <Text className="text-[#f87171] font-semibold">+0</Text>
+                <Text className="text-[#f87171] font-semibold">+{points}</Text>
               </View>
               {/* Notifications bell */}
               <TouchableOpacity onPress={() => router.push('/notifications')}>
