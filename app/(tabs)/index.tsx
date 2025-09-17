@@ -303,7 +303,7 @@ export default function Home() {
                   {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
                   
                   {/* Test Real-time Button */}
-                  <TouchableOpacity onPress={async () => {
+                  {/* <TouchableOpacity onPress={async () => {
                     if (user?.id) {
                       try {
                         console.log('🧪 Testing real-time by adding 25 points...');
@@ -315,7 +315,7 @@ export default function Home() {
                     }
                   }} className="px-3 py-2 bg-yellow-400 rounded-md mr-2">
                     <Text className="text-xs font-semibold text-black">Test +25</Text>
-                  </TouchableOpacity>
+                  </TouchableOpacity> */}
                   
                   {/* Sync Button */}
                   <TouchableOpacity onPress={() => {
