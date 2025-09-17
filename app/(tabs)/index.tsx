@@ -209,7 +209,7 @@ export default function Home() {
             <View className="flex-row items-center justify-space-between flex-1">
               <View className = "flex-row items-center justify-center rounded-full px-3 py-1">
                 <Image source={require('../../assets/icons/flame-hot.png')} style={{ width: 30, height: 30 }} />
-                <Text className="text-black font-bold text-lg ">
+                <Text className="text-[#FFB74D] font-extrabold text-lg ">
                   {streak ? streak.currentStreak.days : '0'}
                 </Text>
               </View>
@@ -218,12 +218,17 @@ export default function Home() {
             </View>
           ),
           headerRight: () => (
-            <TouchableOpacity 
-              onPress={() => router.push('/notifications')}
-              className="mr-4"
-            >
-              <Octicons name="bell" style={{ fontWeight: 'bold' }} size={20} color="black" />
-            </TouchableOpacity>
+            <View className="flex-row items-center mr-4">
+              {/* Bolt icon + points */}
+              <View className="flex-row items-center mr-3">
+                <Image source={require('../../assets/icons/bolt.png')} style={{ width: 20, height: 20, marginRight: 4 }} />
+                <Text className="text-[#f87171] font-semibold">+0</Text>
+              </View>
+              {/* Notifications bell */}
+              <TouchableOpacity onPress={() => router.push('/notifications')}>
+                <Octicons name="bell" style={{ fontWeight: 'bold' }} size={20} color="black" />
+              </TouchableOpacity>
+            </View>
           ),
           headerTitleAlign: 'center' as const,
         }} 
