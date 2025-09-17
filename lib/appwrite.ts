@@ -23,3 +23,16 @@ export { Permission, Role };
 
 export type AppwriteSession = Models.Session;
 export type AppwriteUser = Models.User<Models.Preferences>;
+
+// Real-time subscription helper
+export function subscribeToProfileUpdates(userId: string, callback: (points: number) => void) {
+  const channel = `databases.${APPWRITE_DATABASE_ID}.collections.${APPWRITE_PROFILES_COLLECTION_ID}.documents`;
+  
+  return appwriteClient.subscribe(channel, (response: any) => {
+    // Check if this update is for our user
+    if (response.payload && response.payload.userId === userId) {
+      console.log('🎉 Real-time points update received!', response.payload.points);
+      callback(response.payload.points || 0);
+    }
+  });
+}

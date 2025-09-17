@@ -2,8 +2,8 @@ import { Stack, router } from 'expo-router';
 import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
-import { account } from '~/lib/appwrite';
-import { getOrCreateProfile, getPoints } from '~/lib/profileService';
+import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
+import { getOrCreateProfile, getPoints, updateProfileWithGitHubUsername } from '~/lib/profileService';
 import { checkAndAwardCommits, awardPointsForContributionIncrease } from '~/lib/commitService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
@@ -177,6 +177,15 @@ export default function Home() {
             setGhLogin(login);
             setGhIdentity(gh);
             
+            // Update profile with GitHub username for webhook integration
+            if (user?.id) {
+              try {
+                await updateProfileWithGitHubUsername(user.id, login);
+              } catch (e) {
+                console.warn('Failed to update profile with GitHub username:', e);
+              }
+            }
+            
             try {
               const streakRes = await fetch(`https://api.franznkemaka.com/github-streak/stats/${encodeURIComponent(login)}`);
               if (streakRes.ok) {
@@ -198,7 +207,7 @@ export default function Home() {
     } catch (e: any) {
       console.error('Failed to fetch GitHub info:', e);
     }
-  }, [ensureMonthLoaded]);
+  }, [ensureMonthLoaded, user?.id]);
 
   // Helpers to compute month ranges and fetch per-month contributions
   const getMonthRange = (offset: number) => {
@@ -234,6 +243,23 @@ export default function Home() {
     };
     run();
   }, [user?.id, user?.name, user?.avatarUrl]);
+
+  // Real-time subscription for point updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔄 Setting up real-time points subscription...');
+    const unsubscribe = subscribeToProfileUpdates(user.id, (newPoints) => {
+      console.log('🎉 Points updated in real-time!', newPoints);
+      setPoints(newPoints);
+      // Optional: Show a toast or animation here
+    });
+
+    return () => {
+      console.log('🔌 Unsubscribing from real-time updates');
+      unsubscribe();
+    };
+  }, [user?.id]);
 
   // Manual check for commits and award points
   const checkForCommits = useCallback(async () => {

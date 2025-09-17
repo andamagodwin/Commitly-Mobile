@@ -87,6 +87,30 @@ export async function awardCommitPoints(userId: string, commitSha?: string): Pro
   }
 }
 
+export async function updateProfileWithGitHubUsername(userId: string, githubUsername: string): Promise<Profile | null> {
+  try {
+    const db = APPWRITE_DATABASE_ID;
+    const col = APPWRITE_PROFILES_COLLECTION_ID;
+
+    const existing = await databases.listDocuments(db, col, [Query.equal('userId', userId), Query.limit(1)]);
+    if (existing.total === 0) {
+      console.warn('No profile found to update with GitHub username');
+      return null;
+    }
+
+    const profile = existing.documents[0] as any;
+    const updated = await databases.updateDocument(db, col, profile.$id, {
+      username: githubUsername,
+    });
+
+    console.log(`✅ Updated profile with GitHub username: ${githubUsername}`);
+    return normalize(updated as any);
+  } catch (error) {
+    console.error('Failed to update profile with GitHub username:', error);
+    return null;
+  }
+}
+
 function normalize(doc: any): Profile {
   return {
     $id: doc.$id,
