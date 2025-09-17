@@ -3,8 +3,7 @@ import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWi
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
-import { getOrCreateProfile, getPoints, updateProfileWithGitHubUsername } from '~/lib/profileService';
-import { checkAndAwardCommits, awardPointsForContributionIncrease } from '~/lib/commitService';
+import { getOrCreateProfile, updateProfileWithGitHubUsername } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
 
@@ -123,24 +122,6 @@ export default function Home() {
         ...prev,
         [offset]: { label, total: calendar.totalContributions as number, weeks: normalized, loading: false, error: null },
       }));
-
-      // Check for new contributions and award points
-      if (user?.id && ghLogin && offset === 0) { // Only check for current month
-        const previousData = monthData[offset];
-        const previousTotal = previousData?.total || 0;
-        const currentTotal = calendar.totalContributions as number;
-        
-        if (currentTotal > previousTotal) {
-          try {
-            await awardPointsForContributionIncrease(user.id, previousTotal, currentTotal);
-            // Refresh points in UI
-            const updatedPoints = await getPoints(user.id);
-            setPoints(updatedPoints);
-          } catch (e) {
-            console.warn('Failed to award points for contributions:', e);
-          }
-        }
-      }
     } catch (err) {
       console.warn('Failed to fetch contributions:', err);
       setMonthData((prev) => ({
@@ -148,7 +129,7 @@ export default function Home() {
         [offset]: { ...(prev[offset] || { weeks: [] as ContribWeek[] }), label: (prev[offset]?.label || getMonthRange(offset).label), total: 0, loading: false, error: 'Failed to load contributions.' },
       }));
     }
-  }, [monthData, ghLogin, user?.id]);
+  }, []);
 
   const ensureMonthLoaded = useCallback(async (login: string, identity: any, offset: number) => {
     const existing = monthData[offset];
@@ -261,27 +242,6 @@ export default function Home() {
     };
   }, [user?.id]);
 
-  // Manual check for commits and award points
-  const checkForCommits = useCallback(async () => {
-    if (!user?.id || !ghLogin) return;
-    
-    try {
-      console.log('Checking for new commits...');
-      const newCommits = await checkAndAwardCommits(user.id, ghLogin);
-      
-      if (newCommits.length > 0) {
-        // Refresh points in UI
-        const updatedPoints = await getPoints(user.id);
-        setPoints(updatedPoints);
-        console.log(`✅ Found ${newCommits.length} new commits and awarded points!`);
-      } else {
-        console.log('No new commits found');
-      }
-    } catch (e) {
-      console.warn('Failed to check commits:', e);
-    }
-  }, [user?.id, ghLogin]);
-
   return (
     <>
       <Stack.Screen 
@@ -341,14 +301,6 @@ export default function Home() {
                 <Text className="text-lg font-semibold text-white">Monthly Contributions</Text>
                 <View className="flex-row items-center">
                   {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
-                  
-                  {/* Check for Commits Button */}
-                  <TouchableOpacity 
-                    onPress={checkForCommits}
-                    className="px-3 py-2 bg-yellow-400 rounded-md mr-2"
-                  >
-                    <Text className="text-xs font-semibold text-black">+25 ⚡</Text>
-                  </TouchableOpacity>
                   
                   {/* Sync Button */}
                   <TouchableOpacity onPress={() => {
