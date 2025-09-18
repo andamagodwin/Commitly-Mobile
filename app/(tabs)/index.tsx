@@ -532,7 +532,7 @@ export default function Home() {
                 className="flex-1 bg-blue-500 rounded-lg p-3"
                 onPress={handleGoalUpdate}
               >
-                <Text className="text-white text-center font-semibold">Save</Text>
+                <Text className="text-white text-center font-semibold">update</Text>
               </TouchableOpacity>
             </View>
           </View>
