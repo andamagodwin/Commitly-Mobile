@@ -8,6 +8,7 @@ export type Profile = {
   avatarUrl?: string | null;
   points: number; // aka sparks
   todaysCommits: number; // Daily commits count
+  dailyGoal: number; // Daily commits goal (default: 5)
   lastCommitAt?: string | null; // ISO date
 };
 
@@ -18,6 +19,7 @@ export type Profile = {
 // - avatarUrl (string)
 // - points (integer)
 // - todaysCommits (integer)
+// - dailyGoal (integer, default: 5)
 // - lastCommitAt (datetime)
 
 // Note: createdAt is provided by Appwrite system timestamps
@@ -38,6 +40,7 @@ export async function getOrCreateProfile(userId: string, data?: Partial<Profile>
     userId,
     points: 0,
     todaysCommits: 0,
+    dailyGoal: 5, // Default daily goal
     lastCommitAt: null,
     ...data,
   };
@@ -89,6 +92,31 @@ export async function awardCommitPoints(userId: string, commitSha?: string): Pro
   }
 }
 
+export async function updateDailyGoal(userId: string, newGoal: number): Promise<Profile | null> {
+  try {
+    const db = APPWRITE_DATABASE_ID;
+    const col = APPWRITE_PROFILES_COLLECTION_ID;
+
+    // Validate goal (1-50 commits)
+    if (newGoal < 1 || newGoal > 50) {
+      throw new Error('Daily goal must be between 1 and 50 commits');
+    }
+
+    const existing = await databases.listDocuments(db, col, [Query.equal('userId', userId), Query.limit(1)]);
+    if (existing.total === 0) {
+      throw new Error('Profile not found');
+    }
+
+    const doc = existing.documents[0];
+    const updated = await databases.updateDocument(db, col, doc.$id, { dailyGoal: newGoal });
+    console.log(`Updated daily goal to ${newGoal} for user ${userId}`);
+    return normalize(updated);
+  } catch (error) {
+    console.error('Failed to update daily goal:', error);
+    return null;
+  }
+}
+
 export async function updateProfileWithGitHubUsername(userId: string, githubUsername: string): Promise<Profile | null> {
   try {
     const db = APPWRITE_DATABASE_ID;
@@ -122,6 +150,7 @@ function normalize(doc: any): Profile {
     avatarUrl: doc.avatarUrl ?? null,
     points: typeof doc.points === 'number' ? doc.points : 0,
     todaysCommits: typeof doc.todaysCommits === 'number' ? doc.todaysCommits : 0,
+    dailyGoal: typeof doc.dailyGoal === 'number' ? doc.dailyGoal : 5,
     lastCommitAt: doc.lastCommitAt ?? null,
   };
 }

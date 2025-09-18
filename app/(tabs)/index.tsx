@@ -1,9 +1,9 @@
 import { Stack, router } from 'expo-router';
-import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions } from 'react-native';
+import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWindowDimensions, Modal, TextInput, Alert } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
-import { getOrCreateProfile, updateProfileWithGitHubUsername } from '~/lib/profileService';
+import { getOrCreateProfile, updateProfileWithGitHubUsername, updateDailyGoal } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
 
@@ -34,6 +34,9 @@ export default function Home() {
   const [ghIdentity, setGhIdentity] = useState<any>(undefined);
   const [points, setPoints] = useState<number>(0);
   const [todaysCommits, setTodaysCommits] = useState<number>(0);
+  const [dailyGoal, setDailyGoal] = useState<number>(5);
+  const [showGoalModal, setShowGoalModal] = useState<boolean>(false);
+  const [newGoalInput, setNewGoalInput] = useState<string>('');
   const [monthPages, setMonthPages] = useState<number[]>([0, 1]); // 0 = current, 1 = previous
   type MonthData = { label: string; total: number; weeks: ContribWeek[]; loading: boolean; error?: string | null };
   const [monthData, setMonthData] = useState<Record<number, MonthData>>({});
@@ -220,6 +223,7 @@ export default function Home() {
         });
         setPoints(profile.points ?? 0);
         setTodaysCommits(profile.todaysCommits ?? 0);
+        setDailyGoal(profile.dailyGoal ?? 5);
       } catch (e) {
         console.warn('Failed to load profile points', e);
       }
@@ -236,6 +240,7 @@ export default function Home() {
       console.log('🎉 Profile updated in real-time!', data);
       setPoints(data.points);
       setTodaysCommits(data.todaysCommits);
+      setDailyGoal(data.dailyGoal);
       // Optional: Show a toast or animation here
     });
 
@@ -244,6 +249,31 @@ export default function Home() {
       unsubscribe();
     };
   }, [user?.id]);
+
+  // Handle goal update
+  const handleGoalUpdate = async () => {
+    if (!user?.id || !newGoalInput.trim()) return;
+    
+    const newGoal = parseInt(newGoalInput.trim());
+    if (isNaN(newGoal) || newGoal < 1 || newGoal > 50) {
+      Alert.alert('Invalid Goal', 'Please enter a number between 1 and 50');
+      return;
+    }
+
+    try {
+      const updatedProfile = await updateDailyGoal(user.id, newGoal);
+      if (updatedProfile) {
+        setDailyGoal(newGoal);
+        setShowGoalModal(false);
+        setNewGoalInput('');
+        Alert.alert('Success', `Daily goal updated to ${newGoal} commits!`);
+      } else {
+        Alert.alert('Error', 'Failed to update daily goal');
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to update daily goal');
+    }
+  };
 
   return (
     <>
@@ -299,7 +329,13 @@ export default function Home() {
             </View>
 
             {/* Daily Commits Card */}
-            <View className="mx-2 p-4 bg-blue-500 rounded-xl mb-4">
+            <TouchableOpacity 
+              className="mx-2 p-4 bg-blue-500 rounded-xl mb-4"
+              onPress={() => {
+                setNewGoalInput(dailyGoal.toString());
+                setShowGoalModal(true);
+              }}
+            >
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-3">
@@ -307,7 +343,7 @@ export default function Home() {
                   </View>
                   <View>
                     <Text className="text-white text-lg font-semibold">Today&apos;s Commits</Text>
-                    <Text className="text-blue-100 text-sm">Keep coding today!</Text>
+                    <Text className="text-blue-100 text-sm">Tap to set goal</Text>
                   </View>
                 </View>
                 <View className="items-center">
@@ -320,19 +356,19 @@ export default function Home() {
               <View className="mt-4">
                 <View className="flex-row justify-between items-center mb-2">
                   <Text className="text-blue-100 text-sm">Daily Goal</Text>
-                  <Text className="text-blue-100 text-sm">{todaysCommits}/5</Text>
+                  <Text className="text-blue-100 text-sm">{todaysCommits}/{dailyGoal}</Text>
                 </View>
                 <View className="h-2 bg-white/20 rounded-full">
                   <View 
                     className="h-2 bg-white rounded-full" 
-                    style={{ width: `${Math.min((todaysCommits / 5) * 100, 100)}%` }}
+                    style={{ width: `${Math.min((todaysCommits / dailyGoal) * 100, 100)}%` }}
                   />
                 </View>
-                {todaysCommits >= 5 && (
+                {todaysCommits >= dailyGoal && (
                   <Text className="text-white text-sm font-semibold mt-2">🎉 Daily goal achieved!</Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* Monthly Contributions Section with paging */}
             <View className="p-4 bg-green-400 rounded-xl mb-6">
@@ -452,6 +488,50 @@ export default function Home() {
           <Text>Loading your profile…</Text>
         )}
       </View>
+
+      {/* Goal Setting Modal */}
+      <Modal
+        visible={showGoalModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowGoalModal(false)}
+      >
+        <View className="flex-1 justify-center items-center bg-black/50">
+          <View className="bg-white rounded-xl p-6 mx-4 w-80">
+            <Text className="text-xl font-bold text-gray-800 mb-4">Set Daily Goal</Text>
+            <Text className="text-gray-600 mb-4">How many commits do you want to make daily?</Text>
+            
+            <TextInput
+              value={newGoalInput}
+              onChangeText={setNewGoalInput}
+              placeholder="Enter goal (1-50)"
+              keyboardType="numeric"
+              className="border border-gray-300 rounded-lg p-3 mb-4"
+              autoFocus={true}
+              selectTextOnFocus={true}
+            />
+            
+            <View className="flex-row gap-3">
+              <TouchableOpacity
+                className="flex-1 bg-gray-200 rounded-lg p-3"
+                onPress={() => {
+                  setShowGoalModal(false);
+                  setNewGoalInput('');
+                }}
+              >
+                <Text className="text-gray-800 text-center font-semibold">Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                className="flex-1 bg-blue-500 rounded-lg p-3"
+                onPress={handleGoalUpdate}
+              >
+                <Text className="text-white text-center font-semibold">Save</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </>
   );
 }
