@@ -5,6 +5,7 @@ import { useAuthStore } from '~/store/auth';
 import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
 import { getOrCreateProfile, updateProfileWithGitHubUsername, updateDailyGoal } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
+import LottieView from 'lottie-react-native';
 import '../../global.css';
 
 type GitHubStreak = {
@@ -339,7 +340,12 @@ export default function Home() {
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center">
                   <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-3">
-                    <Octicons name="git-commit" size={24} color="white" />
+                    <LottieView
+                      source={require('../../assets/animated/winking-face.json')}
+                      autoPlay
+                      loop
+                      style={{ width: 32, height: 32 }}
+                    />
                   </View>
                   <View>
                     <Text className="text-white text-lg font-semibold">Today&apos;s Commits</Text>
