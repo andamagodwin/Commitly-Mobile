@@ -12,7 +12,16 @@
     "plugins": [
       "expo-router",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default",
+          "mode": "development"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
@@ -31,14 +40,24 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.commitly.app"
+      "bundleIdentifier": "com.commitly.app",
+      "infoPlist": {
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "package": "com.commitly.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "permissions": [
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "com.google.android.c2dm.permission.RECEIVE"
+      ],
+      "useNextNotificationsApi": true
     },
     "extra": {
       "router": {},

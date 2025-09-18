@@ -9,6 +9,7 @@ export type Profile = {
   points: number; // aka sparks
   todaysCommits: number; // Daily commits count
   dailyGoal: number; // Daily commits goal (default: 5)
+  pushToken?: string | null; // Expo push notification token
   lastCommitAt?: string | null; // ISO date
 };
 
@@ -20,6 +21,7 @@ export type Profile = {
 // - points (integer)
 // - todaysCommits (integer)
 // - dailyGoal (integer, default: 5)
+// - pushToken (string) // Expo push notification token
 // - lastCommitAt (datetime)
 
 // Note: createdAt is provided by Appwrite system timestamps
@@ -117,6 +119,30 @@ export async function updateDailyGoal(userId: string, newGoal: number): Promise<
   }
 }
 
+export async function updatePushToken(userId: string, pushToken: string): Promise<Profile | null> {
+  try {
+    const db = APPWRITE_DATABASE_ID;
+    const col = APPWRITE_PROFILES_COLLECTION_ID;
+
+    const existing = await databases.listDocuments(db, col, [Query.equal('userId', userId), Query.limit(1)]);
+    if (existing.total === 0) {
+      console.warn('No profile found to update push token');
+      return null;
+    }
+
+    const profile = existing.documents[0] as any;
+    const updated = await databases.updateDocument(db, col, profile.$id, {
+      pushToken: pushToken,
+    });
+
+    console.log(`✅ Updated push token for user ${userId}`);
+    return normalize(updated as any);
+  } catch (error) {
+    console.error('Failed to update push token:', error);
+    return null;
+  }
+}
+
 export async function updateProfileWithGitHubUsername(userId: string, githubUsername: string): Promise<Profile | null> {
   try {
     const db = APPWRITE_DATABASE_ID;
@@ -151,6 +177,7 @@ function normalize(doc: any): Profile {
     points: typeof doc.points === 'number' ? doc.points : 0,
     todaysCommits: typeof doc.todaysCommits === 'number' ? doc.todaysCommits : 0,
     dailyGoal: typeof doc.dailyGoal === 'number' ? doc.dailyGoal : 5,
+    pushToken: doc.pushToken ?? null,
     lastCommitAt: doc.lastCommitAt ?? null,
   };
 }
