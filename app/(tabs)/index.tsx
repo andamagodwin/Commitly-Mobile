@@ -271,7 +271,7 @@ export default function Home() {
               {/* Bolt icon + points */}
               <View className="flex-row items-center mr-3">
                 <Image source={require('../../assets/icons/bolt.png')} style={{ width: 20, height: 20, marginRight: 4 }} />
-                <Text className="text-[#f87171] font-semibold">+{points}</Text>
+                <Text className="text-[#f87171] font-extrabold text-lg">+{points}</Text>
               </View>
               {/* Notifications bell */}
               <TouchableOpacity onPress={() => router.push('/notifications')}>
