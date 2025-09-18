@@ -7,8 +7,8 @@ export type Profile = {
   name?: string | null;
   avatarUrl?: string | null;
   points: number; // aka sparks
+  todaysCommits: number; // Daily commits count
   lastCommitAt?: string | null; // ISO date
-
 };
 
 // Fields used in collection schema:
@@ -17,7 +17,8 @@ export type Profile = {
 // - name (string)
 // - avatarUrl (string)
 // - points (integer)
-// - lastCommitAt (datetime) test more
+// - todaysCommits (integer)
+// - lastCommitAt (datetime)
 
 // Note: createdAt is provided by Appwrite system timestamps
 
@@ -36,6 +37,7 @@ export async function getOrCreateProfile(userId: string, data?: Partial<Profile>
   const payload: any = {
     userId,
     points: 0,
+    todaysCommits: 0,
     lastCommitAt: null,
     ...data,
   };
@@ -119,7 +121,7 @@ function normalize(doc: any): Profile {
     name: doc.name ?? null,
     avatarUrl: doc.avatarUrl ?? null,
     points: typeof doc.points === 'number' ? doc.points : 0,
+    todaysCommits: typeof doc.todaysCommits === 'number' ? doc.todaysCommits : 0,
     lastCommitAt: doc.lastCommitAt ?? null,
-
   };
 }

@@ -25,7 +25,7 @@ export type AppwriteSession = Models.Session;
 export type AppwriteUser = Models.User<Models.Preferences>;
 
 // Real-time subscription helper
-export function subscribeToProfileUpdates(userId: string, callback: (points: number) => void) {
+export function subscribeToProfileUpdates(userId: string, callback: (data: { points: number; todaysCommits: number }) => void) {
   const channel = `databases.${APPWRITE_DATABASE_ID}.collections.${APPWRITE_PROFILES_COLLECTION_ID}.documents`;
   
   console.log('🔄 Subscribing to channel:', channel);
@@ -39,8 +39,11 @@ export function subscribeToProfileUpdates(userId: string, callback: (points: num
     
     // Check if this update is for our user
     if (response.payload && response.payload.userId === userId) {
-      console.log('✅ Points update for current user!', response.payload.points);
-      callback(response.payload.points || 0);
+      console.log('✅ Profile update for current user!', response.payload);
+      callback({
+        points: response.payload.points || 0,
+        todaysCommits: response.payload.todaysCommits || 0
+      });
     } else {
       console.log('❌ Update not for current user:', {
         payloadUserId: response.payload?.userId,

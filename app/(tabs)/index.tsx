@@ -3,7 +3,7 @@ import { Image, Text, View, FlatList, ActivityIndicator, TouchableOpacity, useWi
 import { useEffect, useState, useCallback } from 'react';
 import { useAuthStore } from '~/store/auth';
 import { account, subscribeToProfileUpdates } from '~/lib/appwrite';
-import { getOrCreateProfile, updateProfileWithGitHubUsername, addPoints } from '~/lib/profileService';
+import { getOrCreateProfile, updateProfileWithGitHubUsername } from '~/lib/profileService';
 import Octicons from '@expo/vector-icons/Octicons';
 import '../../global.css';
 
@@ -33,6 +33,7 @@ export default function Home() {
   const [ghLogin, setGhLogin] = useState<string | undefined>(undefined);
   const [ghIdentity, setGhIdentity] = useState<any>(undefined);
   const [points, setPoints] = useState<number>(0);
+  const [todaysCommits, setTodaysCommits] = useState<number>(0);
   const [monthPages, setMonthPages] = useState<number[]>([0, 1]); // 0 = current, 1 = previous
   type MonthData = { label: string; total: number; weeks: ContribWeek[]; loading: boolean; error?: string | null };
   const [monthData, setMonthData] = useState<Record<number, MonthData>>({});
@@ -218,6 +219,7 @@ export default function Home() {
           avatarUrl: user.avatarUrl ?? null,
         });
         setPoints(profile.points ?? 0);
+        setTodaysCommits(profile.todaysCommits ?? 0);
       } catch (e) {
         console.warn('Failed to load profile points', e);
       }
@@ -225,14 +227,15 @@ export default function Home() {
     run();
   }, [user?.id, user?.name, user?.avatarUrl]);
 
-  // Real-time subscription for point updates
+  // Real-time subscription for profile updates
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('🔄 Setting up real-time points subscription...');
-    const unsubscribe = subscribeToProfileUpdates(user.id, (newPoints) => {
-      console.log('🎉 Points updated in real-time!', newPoints);
-      setPoints(newPoints);
+    console.log('🔄 Setting up real-time profile subscription...');
+    const unsubscribe = subscribeToProfileUpdates(user.id, (data) => {
+      console.log('🎉 Profile updated in real-time!', data);
+      setPoints(data.points);
+      setTodaysCommits(data.todaysCommits);
       // Optional: Show a toast or animation here
     });
 
@@ -293,6 +296,42 @@ export default function Home() {
                 {greeting}, {user?.name || (user as any)?.fullName || (user as any)?.username || ghLogin || 'there'}!
               </Text>
               <Text className="text-gray-600 mt-1">Keep your streak strong 🔥</Text>
+            </View>
+
+            {/* Daily Commits Card */}
+            <View className="mx-2 p-4 bg-blue-500 rounded-xl mb-4">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <View className="w-12 h-12 bg-white/20 rounded-full items-center justify-center mr-3">
+                    <Octicons name="git-commit" size={24} color="white" />
+                  </View>
+                  <View>
+                    <Text className="text-white text-lg font-semibold">Today&apos;s Commits</Text>
+                    <Text className="text-blue-100 text-sm">Keep coding today!</Text>
+                  </View>
+                </View>
+                <View className="items-center">
+                  <Text className="text-white text-3xl font-bold">{todaysCommits}</Text>
+                  <Text className="text-blue-100 text-xs">commits</Text>
+                </View>
+              </View>
+              
+              {/* Progress indicator */}
+              <View className="mt-4">
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-blue-100 text-sm">Daily Goal</Text>
+                  <Text className="text-blue-100 text-sm">{todaysCommits}/5</Text>
+                </View>
+                <View className="h-2 bg-white/20 rounded-full">
+                  <View 
+                    className="h-2 bg-white rounded-full" 
+                    style={{ width: `${Math.min((todaysCommits / 5) * 100, 100)}%` }}
+                  />
+                </View>
+                {todaysCommits >= 5 && (
+                  <Text className="text-white text-sm font-semibold mt-2">🎉 Daily goal achieved!</Text>
+                )}
+              </View>
             </View>
 
             {/* Monthly Contributions Section with paging */}
