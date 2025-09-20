@@ -1,5 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Configure how notifications are handled when the app is in the foreground
@@ -57,8 +58,10 @@ export class NotificationService {
     }
 
     try {
-      // Get the Expo push token (projectId is optional for development)
-      const token = await Notifications.getExpoPushTokenAsync();
+      // Get the Expo push token
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
 
       this.expoPushToken = token.data;
       console.log('📱 Expo Push Token:', token.data);
@@ -73,10 +76,19 @@ export class NotificationService {
       console.error('Error getting push token:', error);
       // For development, we can still return a mock token to continue testing
       if (__DEV__) {
-        console.warn('Using development mode - push notifications may not work fully');
-        const mockToken = 'development-token-' + Date.now();
-        this.expoPushToken = mockToken;
-        return mockToken;
+        console.warn('Using development mode - trying alternative token generation');
+        try {
+          // Try without projectId for development
+          const token = await Notifications.getExpoPushTokenAsync();
+          this.expoPushToken = token.data;
+          console.log('📱 Development Push Token:', token.data);
+          return token.data;
+        } catch (fallbackError) {
+          console.error('Fallback token generation failed:', fallbackError);
+          const mockToken = 'development-token-' + Date.now();
+          this.expoPushToken = mockToken;
+          return mockToken;
+        }
       }
       return null;
     }
