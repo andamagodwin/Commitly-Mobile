@@ -26,6 +26,37 @@ export type Profile = {
 
 // Note: createdAt is provided by Appwrite system timestamps
 
+/**
+ * Send welcome notification to new users
+ */
+async function sendWelcomeNotification(userId: string, username: string, pushToken?: string | null): Promise<void> {
+  try {
+    const response = await fetch('https://68d3e934001021a6cea1.fra.appwrite.run/functions/welcome-notification/executions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Appwrite-Project': '68b3f1c50021442e08ec'
+      },
+      body: JSON.stringify({
+        userId: userId,
+        username: username,
+        pushToken: pushToken || null
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      console.log('✅ Welcome notification sent successfully:', result);
+    } else {
+      console.warn('⚠️ Welcome notification failed:', result);
+    }
+  } catch (error) {
+    console.error('❌ Failed to send welcome notification:', error);
+    // Don't throw - welcome notification failure shouldn't block user creation
+  }
+}
+
 export async function getOrCreateProfile(userId: string, data?: Partial<Profile>): Promise<Profile> {
   const db = APPWRITE_DATABASE_ID;
   const col = APPWRITE_PROFILES_COLLECTION_ID;
@@ -52,7 +83,14 @@ export async function getOrCreateProfile(userId: string, data?: Partial<Profile>
     Permission.delete(Role.user(userId)),
   ];
   const created = await databases.createDocument(db, col, ID.unique(), payload, permissions);
-  return normalize(created as any);
+  const profile = normalize(created as any);
+
+  // Send welcome notification for new users (don't await to avoid blocking)
+  sendWelcomeNotification(userId, data?.name || 'User', profile.pushToken).catch((error: any) => {
+    console.warn('Failed to send welcome notification:', error);
+  });
+
+  return profile;
 }
 
 export async function addPoints(userId: string, delta: number, context?: { lastCommitAt?: string }) {
@@ -131,11 +169,21 @@ export async function updatePushToken(userId: string, pushToken: string): Promis
     }
 
     const profile = existing.documents[0] as any;
+    const isNewToken = !profile.pushToken; // Check if this is the first time setting a push token
+    
     const updated = await databases.updateDocument(db, col, profile.$id, {
       pushToken: pushToken,
     });
 
     console.log(`✅ Updated push token for user ${userId}`);
+    
+    // Send welcome notification if this is a new user (first push token)
+    if (isNewToken) {
+      sendWelcomeNotification(userId, profile.name || profile.username || 'User', pushToken).catch((error: any) => {
+        console.warn('Failed to send welcome notification on token update:', error);
+      });
+    }
+    
     return normalize(updated as any);
   } catch (error) {
     console.error('Failed to update push token:', error);

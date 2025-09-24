@@ -1,53 +1,76 @@
 import { Stack } from 'expo-router';
-import { Text, View, ScrollView, TouchableOpacity } from 'react-native';
+import { Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
 import Octicons from '@expo/vector-icons/Octicons';
+import { useAuthStore } from '~/store/auth';
+import { 
+  getUserNotifications, 
+  markNotificationAsRead, 
+  markAllNotificationsAsRead,
+  NotificationData
+} from '~/lib/notificationService.appwrite';
 import '../global.css';
 
-type Notification = {
-  id: string;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  type: 'info' | 'success' | 'warning' | 'error';
-};
-
 export default function Notifications() {
-  // Mock notifications data
-  const notifications: Notification[] = [
-    {
-      id: '1',
-      title: 'Welcome to Commitly!',
-      message: 'Thanks for joining Commitly. Start tracking your GitHub activity and build better coding habits.',
-      timestamp: '2025-09-01T10:00:00Z',
-      read: false,
-      type: 'info'
-    },
-    {
-      id: '2',
-      title: 'GitHub Connected',
-      message: 'Your GitHub account has been successfully connected. We can now track your contributions.',
-      timestamp: '2025-09-01T09:30:00Z',
-      read: true,
-      type: 'success'
-    },
-    {
-      id: '3',
-      title: 'Streak Alert',
-      message: 'Great job! You\'re on a 4-day contribution streak. Keep it up!',
-      timestamp: '2025-08-31T18:00:00Z',
-      read: true,
-      type: 'success'
-    },
-    {
-      id: '4',
-      title: 'New Feature Available',
-      message: 'Check out the new contributions chart in your profile to visualize your coding activity.',
-      timestamp: '2025-08-30T14:00:00Z',
-      read: false,
-      type: 'info'
+  const user = useAuthStore((s) => s.user);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
+
+  // Fetch notifications when component mounts
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!user?.id) return;
+      
+      try {
+        setLoading(true);
+        const userNotifications = await getUserNotifications(user.id);
+        setNotifications(userNotifications);
+      } catch (error) {
+        console.error('Failed to fetch notifications:', error);
+        Alert.alert('Error', 'Failed to load notifications');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, [user?.id]);
+
+
+
+  const handleMarkAsRead = async (notificationId: string) => {
+    const success = await markNotificationAsRead(notificationId);
+    if (success) {
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.$id === notificationId 
+            ? { ...notif, read: true }
+            : notif
+        )
+      );
     }
-  ];
+  };
+
+  const handleMarkAllAsRead = async () => {
+    if (!user?.id) return;
+    
+    try {
+      setMarkingAllRead(true);
+      const success = await markAllNotificationsAsRead(user.id);
+      if (success) {
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, read: true }))
+        );
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to mark all notifications as read');
+    } finally {
+      setMarkingAllRead(false);
+    }
+  };
+
+
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -58,8 +81,8 @@ export default function Notifications() {
     }
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
+  const formatTime = (createdAt: string) => {
+    const date = new Date(createdAt);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -77,19 +100,36 @@ export default function Notifications() {
         options={{
           title: 'Notifications',
           headerBackTitle: 'Back',
+          headerStyle: {
+            backgroundColor: '#5e28ca', // Tailwind gray-50
+          },
+          headerTintColor: '#fff', // Text color
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          }
         }}
       />
       <ScrollView className="flex-1 bg-gray-50">
         <View className="p-4">
-          {notifications.length > 0 ? (
+          {loading ? (
+            <View className="flex-1 items-center justify-center py-20">
+              <ActivityIndicator size="large" color="#3b82f6" />
+              <Text className="text-gray-500 text-lg font-medium mt-4">
+                Loading notifications...
+              </Text>
+            </View>
+          ) : notifications.length > 0 ? (
             <>
               <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-lg font-bold text-gray-900">
-                  Recent Notifications
+                  Recent Notifications ({notifications.filter(n => !n.read).length} unread)
                 </Text>
-                <TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={handleMarkAllAsRead}
+                  disabled={markingAllRead}
+                >
                   <Text className="text-blue-600 text-sm font-medium">
-                    Mark all as read
+                    {markingAllRead ? 'Marking...' : 'Mark all as read'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -99,12 +139,13 @@ export default function Notifications() {
                 
                 return (
                   <TouchableOpacity
-                    key={notification.id}
+                    key={notification.$id}
                     className={`mb-3 p-4 rounded-lg border ${
                       notification.read 
                         ? 'bg-white border-gray-200' 
                         : 'bg-blue-50 border-blue-200'
                     }`}
+                    onPress={() => !notification.read && handleMarkAsRead(notification.$id)}
                   >
                     <View className="flex-row items-start">
                       <View className="mr-3 mt-1">
@@ -134,7 +175,7 @@ export default function Notifications() {
                         </Text>
                         
                         <Text className="text-xs text-gray-500">
-                          {formatTime(notification.timestamp)}
+                          {formatTime(notification.createdAt)}
                         </Text>
                       </View>
                     </View>

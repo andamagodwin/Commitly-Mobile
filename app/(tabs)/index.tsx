@@ -331,9 +331,9 @@ export default function Home() {
               <Text className="text-gray-600 mt-1">Keep your streak strong 🔥</Text>
             </View>
 
-            {/* Daily Commits Card */}
+            {/* Daily Commits Card - Full Width */}
             <TouchableOpacity 
-              className=" p-4 bg-[#5e28ca] rounded-xl mb-4"
+              className="p-4 bg-[#5e28ca] rounded-xl mb-4"
               onPress={() => {
                 setNewGoalInput(dailyGoal.toString());
                 setShowGoalModal(true);
@@ -378,176 +378,248 @@ export default function Home() {
               </View>
             </TouchableOpacity>
 
-            {/* Monthly Contributions Section with paging */}
-            <View className="p-4 bg-green-400 rounded-xl mb-6 w-1/2">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-lg font-semibold text-white">Monthly</Text>
-                <View className="flex-row items-center gap-2">
-                  {monthData[currentMonthIndex]?.loading && (
-                    <ActivityIndicator size="small" color="white" />
-                  )}
+            {/* Grid Layout for Cards */}
+            <View className="flex-row flex-wrap justify-between">
+              {/* Row 1 - Monthly Contributions & Weekly Activity */}
+              <View className="flex-row justify-between w-full mb-4">
+                {/* Monthly Contributions Card */}
+                <View className="p-4 bg-green-400 rounded-xl flex-1 mr-2">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-lg font-semibold text-white">Monthly</Text>
+                    <View className="flex-row items-center gap-2">
+                      {monthData[currentMonthIndex]?.loading && (
+                        <ActivityIndicator size="small" color="white" />
+                      )}
+                      
+                      {/* Refresh/Sync Button */}
+                      <TouchableOpacity 
+                        onPress={() => {
+                          if (ghLogin && ghIdentity) {
+                            fetchMonth(ghLogin, ghIdentity, currentMonthIndex);
+                          } else {
+                            fetchGithubInfo();
+                          }
+                        }} 
+                        className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
+                        activeOpacity={0.7}
+                      >
+                        <Octicons name="sync" size={16} color="white" />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                   
-                  {/* Refresh/Sync Button with better positioning */}
-                  <TouchableOpacity 
-                    onPress={() => {
-                      if (ghLogin && ghIdentity) {
-                        fetchMonth(ghLogin, ghIdentity, currentMonthIndex);
-                      } else {
-                        fetchGithubInfo();
+                  <FlatList
+                    data={monthPages}
+                    keyExtractor={(o) => `month-${o}`}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    decelerationRate="fast"
+                    snapToInterval={itemWidth / 2} // Adjust for smaller card width
+                    snapToAlignment="start"
+                    getItemLayout={(_data, index) => ({ length: itemWidth / 2, offset: (itemWidth / 2) * index, index })}
+                    onMomentumScrollEnd={(e) => {
+                      const x = e.nativeEvent.contentOffset.x;
+                      const idx = Math.round(x / (itemWidth / 2));
+                      if (!Number.isNaN(idx)) {
+                        setCurrentMonthIndex(idx);
+                        // Append next previous month when reaching last loaded page
+                        const max = monthPages.length ? Math.max(...monthPages) : 0;
+                        if (idx >= max) {
+                          const next = max + 1;
+                          setMonthPages((prev) => (prev.includes(next) ? prev : [...prev, next]));
+                          if (ghLogin && ghIdentity) {
+                            fetchMonth(ghLogin, ghIdentity, next);
+                          }
+                        }
                       }
-                    }} 
-                    className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
-                    activeOpacity={0.7}
-                  >
-                    <Octicons name="sync" size={16} color="white" />
-                  </TouchableOpacity>
+                    }}
+                    renderItem={({ item: offset }) => {
+                      const data = monthData[offset];
+                      const placeholderLabel = getMonthRange(offset).label;
+                      return (
+                        <View style={{ width: itemWidth / 2 - 16 }}>
+                          <View className="flex-row items-center mb-2">
+                            <Text className="text-sm text-white font-semibold">
+                              {data?.label?.split(' ')[0] || placeholderLabel.split(' ')[0]}
+                            </Text>
+                            <Text className="text-xs text-white ml-1">
+                              {typeof data?.total === 'number' ? `(${data.total})` : ''}
+                            </Text>
+                          </View>
+
+                          {data?.loading && (
+                            <ActivityIndicator size="small" />
+                          )}
+                          {data?.error && !data.loading && (
+                            <Text className="text-gray-500 text-xs italic">{data.error}</Text>
+                          )}
+                          {!data?.loading && !data?.error && (data?.weeks?.length || 0) > 0 && (
+                            <View className="flex-row pr-2">
+                              {data!.weeks.map((week, wi) => (
+                                <View key={week.firstDay + wi} style={{ marginRight: WEEK_GAP }}>
+                                  {week.days.map((day) => {
+                                    const bg = day.color || '#ebedf0';
+                                    const border = day.count > 0 ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.06)';
+                                    return (
+                                      <View
+                                        key={day.date}
+                                        style={{
+                                          backgroundColor: bg,
+                                          width: CELL_SIZE - 2,
+                                          height: CELL_SIZE - 2,
+                                          borderRadius: CELL_RADIUS,
+                                          marginBottom: CELL_GAP,
+                                          borderWidth: 1,
+                                          borderColor: border,
+                                        }}
+                                        accessibilityLabel={`${day.date}: ${day.count} contributions`}
+                                      />
+                                    );
+                                  })}
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    }}
+                  />
                 </View>
-              </View>
-              
-              <FlatList
-                data={monthPages}
-                keyExtractor={(o) => `month-${o}`}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                decelerationRate="fast"
-                snapToInterval={itemWidth}
-                snapToAlignment="start"
-                getItemLayout={(_data, index) => ({ length: itemWidth, offset: itemWidth * index, index })}
-                onMomentumScrollEnd={(e) => {
-                  const x = e.nativeEvent.contentOffset.x;
-                  const idx = Math.round(x / itemWidth);
-                  if (!Number.isNaN(idx)) {
-                    setCurrentMonthIndex(idx);
-                    // Append next previous month when reaching last loaded page
-                    const max = monthPages.length ? Math.max(...monthPages) : 0;
-                    if (idx >= max) {
-                      const next = max + 1;
-                      setMonthPages((prev) => (prev.includes(next) ? prev : [...prev, next]));
-                      if (ghLogin && ghIdentity) {
-                        fetchMonth(ghLogin, ghIdentity, next);
-                      }
-                    }
-                  }
-                }}
-                renderItem={({ item: offset }) => {
-                  const data = monthData[offset];
-                  const placeholderLabel = getMonthRange(offset).label;
-                  return (
-                    <View style={{ width: itemWidth }}>
-                      <View className="flex-row items-center mb-2">
-                        <Text className="text-base text-white font-semibold">
-                          {data?.label || placeholderLabel}
-                        </Text>
-                        <Text className="text-sm text-white ml-2">
-                          {typeof data?.total === 'number' ? `(${data.total})` : ''}
+
+                {/* Weekly Activity Card */}
+                <View className="p-4 bg-purple-500 rounded-xl flex-1 ml-2">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-lg font-semibold text-white">Weekly</Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        if (ghLogin && ghIdentity) {
+                          fetchGithubInfo();
+                        }
+                      }} 
+                      className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
+                      activeOpacity={0.7}
+                    >
+                      <Octicons name="sync" size={16} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View className="space-y-3">
+                    {/* Current Streak */}
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-white font-medium text-sm">Streak</Text>
+                      <View className="flex-row items-center">
+                        <Octicons name="flame" size={14} color="#FFA500" />
+                        <Text className="text-white font-bold ml-1 text-sm">
+                          {streak?.currentStreak?.days || 0}
                         </Text>
                       </View>
-
-                      {data?.loading && (
-                        <ActivityIndicator size="small" />
-                      )}
-                      {data?.error && !data.loading && (
-                        <Text className="text-gray-500 text-sm italic">{data.error}</Text>
-                      )}
-                      {!data?.loading && !data?.error && (data?.weeks?.length || 0) > 0 && (
-                        <View className="flex-row pr-2">
-                          {data!.weeks.map((week, wi) => (
-                            <View key={week.firstDay + wi} style={{ marginRight: WEEK_GAP }}>
-                              {week.days.map((day) => {
-                                const bg = day.color || '#ebedf0';
-                                const border = day.count > 0 ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.06)';
-                                return (
-                                  <View
-                                    key={day.date}
-                                    style={{
-                                      backgroundColor: bg,
-                                      width: CELL_SIZE,
-                                      height: CELL_SIZE,
-                                      borderRadius: CELL_RADIUS,
-                                      marginBottom: CELL_GAP,
-                                      borderWidth: 1,
-                                      borderColor: border,
-                                    }}
-                                    accessibilityLabel={`${day.date}: ${day.count} contributions`}
-                                  />
-                                );
-                              })}
-                            </View>
-                          ))}
-                        </View>
-                      )}
                     </View>
-                  );
-                }}
-              />
-            </View>
 
-            {/* Weekly Activity Card */}
-            <View className="p-4 bg-purple-500 rounded-xl mb-6 w-1/2">
-              <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-lg font-semibold text-white">Weekly Activity</Text>
-                <View className="flex-row items-center gap-2">
-                  <TouchableOpacity 
-                    onPress={() => {
-                      // Refresh weekly data
-                      if (ghLogin && ghIdentity) {
-                        fetchGithubInfo();
-                      }
-                    }} 
-                    className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
-                    activeOpacity={0.7}
-                  >
-                    <Octicons name="sync" size={16} color="white" />
-                  </TouchableOpacity>
+                    {/* Today's Progress */}
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-white font-medium text-sm">Commits</Text>
+                      <View className="flex-row items-center">
+                        <Octicons name="git-commit" size={14} color="#4ADE80" />
+                        <Text className="text-white font-bold ml-1 text-sm">{todaysCommits}</Text>
+                      </View>
+                    </View>
+
+                    {/* Points Today */}
+                    <View className="flex-row justify-between items-center">
+                      <Text className="text-white font-medium text-sm">Points</Text>
+                      <View className="flex-row items-center">
+                        <Octicons name="star" size={14} color="#FBBF24" />
+                        <Text className="text-white font-bold ml-1 text-sm">{points}</Text>
+                      </View>
+                    </View>
+
+                    {/* Progress Bar */}
+                    <View className="mt-2">
+                      <View className="flex-row justify-between mb-1">
+                        <Text className="text-white/80 text-xs">Goal</Text>
+                        <Text className="text-white/80 text-xs">
+                          {Math.round((todaysCommits / dailyGoal) * 100)}%
+                        </Text>
+                      </View>
+                      <View className="bg-white/20 rounded-full h-2">
+                        <View 
+                          className="bg-white rounded-full h-2" 
+                          style={{ 
+                            width: `${Math.min((todaysCommits / dailyGoal) * 100, 100)}%` 
+                          }}
+                        />
+                      </View>
+                    </View>
+                  </View>
                 </View>
               </View>
-              
-              <View className="space-y-3">
-                {/* Current Streak */}
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-white font-medium">Current Streak</Text>
-                  <View className="flex-row items-center">
-                    <Octicons name="flame" size={16} color="#FFA500" />
-                    <Text className="text-white font-bold ml-1">
-                      {streak?.currentStreak?.days || 0} days
-                    </Text>
-                  </View>
-                </View>
 
-                {/* Today's Progress */}
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-white font-medium">Today&apos;s Commits</Text>
+              {/* Row 2 - Longest Streak (Full Width) */}
+              <View className="w-full">
+                <View className="p-4 bg-orange-500 rounded-xl">
+                  <View className="flex-row justify-between items-center mb-3">
+                    <Text className="text-lg font-semibold text-white">Longest Streak</Text>
+                    <TouchableOpacity 
+                      onPress={() => {
+                        if (ghLogin && ghIdentity) {
+                          fetchGithubInfo();
+                        }
+                      }} 
+                      className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
+                      activeOpacity={0.7}
+                    >
+                      <Octicons name="sync" size={16} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                  
                   <View className="flex-row items-center">
-                    <Octicons name="git-commit" size={16} color="#4ADE80" />
-                    <Text className="text-white font-bold ml-1">{todaysCommits}</Text>
-                  </View>
-                </View>
+                    <View className="flex-1 items-center">
+                      <View className="w-16 h-16 bg-white/20 rounded-full items-center justify-center mb-2">
+                        <LottieView
+                          source={require('../../assets/animated/winking-face.json')}
+                          autoPlay
+                          loop
+                          style={{ width: 48, height: 48 }}
+                        />
+                      </View>
+                      <Text className="text-white text-3xl font-bold">
+                        {streak?.longestStreak?.days || 0}
+                      </Text>
+                      <Text className="text-white/80 text-sm">days</Text>
+                    </View>
 
-                {/* Points Today */}
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-white font-medium">Points Earned</Text>
-                  <View className="flex-row items-center">
-                    <Octicons name="star" size={16} color="#FBBF24" />
-                    <Text className="text-white font-bold ml-1">{points}</Text>
-                  </View>
-                </View>
+                    {streak?.longestStreak && streak.longestStreak.days > 0 && (
+                      <View className="flex-1 space-y-2">
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-white/80 text-sm">Started</Text>
+                          <Text className="text-white text-sm font-medium">
+                            {new Date(streak.longestStreak.start).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        <View className="flex-row justify-between items-center">
+                          <Text className="text-white/80 text-sm">Ended</Text>
+                          <Text className="text-white text-sm font-medium">
+                            {new Date(streak.longestStreak.end).toLocaleDateString()}
+                          </Text>
+                        </View>
+                        {streak.currentStreak.days === streak.longestStreak.days && (
+                          <View className="mt-2 p-2 bg-white/20 rounded-lg">
+                            <Text className="text-white text-xs text-center font-semibold">
+                              🔥 You&apos;re at your personal best!
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
 
-                {/* Progress Bar */}
-                <View className="mt-2">
-                  <View className="flex-row justify-between mb-1">
-                    <Text className="text-white/80 text-sm">Daily Goal Progress</Text>
-                    <Text className="text-white/80 text-sm">
-                      {Math.round((todaysCommits / dailyGoal) * 100)}%
-                    </Text>
-                  </View>
-                  <View className="bg-white/20 rounded-full h-2">
-                    <View 
-                      className="bg-white rounded-full h-2" 
-                      style={{ 
-                        width: `${Math.min((todaysCommits / dailyGoal) * 100, 100)}%` 
-                      }}
-                    />
+                    {(!streak?.longestStreak || streak.longestStreak.days === 0) && (
+                      <View className="flex-1 items-center">
+                        <Text className="text-white/80 text-sm text-center">
+                          Start committing daily to build your first streak!
+                        </Text>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
