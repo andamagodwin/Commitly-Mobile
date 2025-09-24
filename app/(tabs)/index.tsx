@@ -46,10 +46,10 @@ export default function Home() {
   const horizontalPadding = 24; // matches container p-6
   const itemWidth = Math.max(280, width - horizontalPadding * 2);
   // Contribution cell styling
-  const CELL_SIZE = 24;
-  const CELL_RADIUS = 4;
-  const CELL_GAP = 4;
-  const WEEK_GAP = 20;
+  const CELL_SIZE = 15;
+  const CELL_RADIUS = 2;
+  const CELL_GAP = 2;
+  const WEEK_GAP = 5;
 
   // Greeting logic
   const hour = new Date().getHours();
@@ -333,7 +333,7 @@ export default function Home() {
 
             {/* Daily Commits Card */}
             <TouchableOpacity 
-              className="mx-2 p-4 bg-blue-500 rounded-xl mb-4"
+              className=" p-4 bg-[#5e28ca] rounded-xl mb-4"
               onPress={() => {
                 setNewGoalInput(dailyGoal.toString());
                 setShowGoalModal(true);
@@ -366,9 +366,9 @@ export default function Home() {
                   <Text className="text-blue-100 text-sm">Daily Goal</Text>
                   <Text className="text-blue-100 text-sm">{todaysCommits}/{dailyGoal}</Text>
                 </View>
-                <View className="h-2 bg-white/20 rounded-full">
+                <View className="h-3 bg-white/20 rounded-full">
                   <View 
-                    className="h-2 bg-white rounded-full" 
+                    className="h-3 bg-white rounded-full" 
                     style={{ width: `${Math.min((todaysCommits / dailyGoal) * 100, 100)}%` }}
                   />
                 </View>
@@ -379,36 +379,27 @@ export default function Home() {
             </TouchableOpacity>
 
             {/* Monthly Contributions Section with paging */}
-            <View className="p-4 bg-green-400 rounded-xl mb-6">
+            <View className="p-4 bg-green-400 rounded-xl mb-6 w-1/2">
               <View className="flex-row justify-between items-center mb-3">
-                <Text className="text-lg font-semibold text-white">Monthly Contributions</Text>
-                <View className="flex-row items-center">
-                  {monthData[currentMonthIndex]?.loading && <ActivityIndicator size="small" />}
+                <Text className="text-lg font-semibold text-white">Monthly</Text>
+                <View className="flex-row items-center gap-2">
+                  {monthData[currentMonthIndex]?.loading && (
+                    <ActivityIndicator size="small" color="white" />
+                  )}
                   
-                  {/* Test Real-time Button */}
-                  {/* <TouchableOpacity onPress={async () => {
-                    if (user?.id) {
-                      try {
-                        console.log('🧪 Testing real-time by adding 25 points...');
-                        await addPoints(user.id, 25);
-                        console.log('✅ Points added to database');
-                      } catch (e) {
-                        console.error('❌ Failed to add points:', e);
+                  {/* Refresh/Sync Button with better positioning */}
+                  <TouchableOpacity 
+                    onPress={() => {
+                      if (ghLogin && ghIdentity) {
+                        fetchMonth(ghLogin, ghIdentity, currentMonthIndex);
+                      } else {
+                        fetchGithubInfo();
                       }
-                    }
-                  }} className="px-3 py-2 bg-yellow-400 rounded-md mr-2">
-                    <Text className="text-xs font-semibold text-black">Test +25</Text>
-                  </TouchableOpacity> */}
-                  
-                  {/* Sync Button */}
-                  <TouchableOpacity onPress={() => {
-                    if (ghLogin && ghIdentity) {
-                      fetchMonth(ghLogin, ghIdentity, currentMonthIndex);
-                    } else {
-                      fetchGithubInfo();
-                    }
-                  }} className="px-3 py-2 bg-white rounded-md">
-                    <Octicons name="sync" size={20} color="black" />
+                    }} 
+                    className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
+                    activeOpacity={0.7}
+                  >
+                    <Octicons name="sync" size={16} color="white" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -490,6 +481,76 @@ export default function Home() {
                   );
                 }}
               />
+            </View>
+
+            {/* Weekly Activity Card */}
+            <View className="p-4 bg-purple-500 rounded-xl mb-6 w-1/2">
+              <View className="flex-row justify-between items-center mb-3">
+                <Text className="text-lg font-semibold text-white">Weekly Activity</Text>
+                <View className="flex-row items-center gap-2">
+                  <TouchableOpacity 
+                    onPress={() => {
+                      // Refresh weekly data
+                      if (ghLogin && ghIdentity) {
+                        fetchGithubInfo();
+                      }
+                    }} 
+                    className="w-8 h-8 bg-white/20 rounded-full items-center justify-center"
+                    activeOpacity={0.7}
+                  >
+                    <Octicons name="sync" size={16} color="white" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+              
+              <View className="space-y-3">
+                {/* Current Streak */}
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-white font-medium">Current Streak</Text>
+                  <View className="flex-row items-center">
+                    <Octicons name="flame" size={16} color="#FFA500" />
+                    <Text className="text-white font-bold ml-1">
+                      {streak?.currentStreak?.days || 0} days
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Today's Progress */}
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-white font-medium">Today&apos;s Commits</Text>
+                  <View className="flex-row items-center">
+                    <Octicons name="git-commit" size={16} color="#4ADE80" />
+                    <Text className="text-white font-bold ml-1">{todaysCommits}</Text>
+                  </View>
+                </View>
+
+                {/* Points Today */}
+                <View className="flex-row justify-between items-center">
+                  <Text className="text-white font-medium">Points Earned</Text>
+                  <View className="flex-row items-center">
+                    <Octicons name="star" size={16} color="#FBBF24" />
+                    <Text className="text-white font-bold ml-1">{points}</Text>
+                  </View>
+                </View>
+
+                {/* Progress Bar */}
+                <View className="mt-2">
+                  <View className="flex-row justify-between mb-1">
+                    <Text className="text-white/80 text-sm">Daily Goal Progress</Text>
+                    <Text className="text-white/80 text-sm">
+                      {Math.round((todaysCommits / dailyGoal) * 100)}%
+                    </Text>
+                  </View>
+                  <View className="bg-white/20 rounded-full h-2">
+                    <View 
+                      className="bg-white rounded-full h-2" 
+                      style={{ 
+                        width: `${Math.min((todaysCommits / dailyGoal) * 100, 100)}%` 
+                      }}
+                    />
+                  </View>
+                </View>
+              </View>
             </View>
           </>
         ) : (
