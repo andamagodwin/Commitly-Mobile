@@ -434,6 +434,7 @@ export default function Home() {
                         }
                       }
                     }}
+                    
                     renderItem={({ item: offset }) => {
                       const data = monthData[offset];
                       const placeholderLabel = getMonthRange(offset).label;
