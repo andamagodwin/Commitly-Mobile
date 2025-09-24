@@ -309,18 +309,13 @@ export default function Home() {
               </View>
               {/* Notifications bell */}
               <TouchableOpacity onPress={() => router.push('/notifications')}>
-                <Octicons name="bell" style={{ fontWeight: 'bold' }} size={20} color="black" />
+                <Image source={require('../../assets/icons/bell.png')} style={{ width: 20, height: 20, marginRight: 4 }} />
               </TouchableOpacity>
-              {/* Test Notifications button (dev only) */}
-              <TouchableOpacity 
-                onPress={() => router.push('/(tabs)/test-notifications' as any)} 
-                className="ml-2 px-2 py-1 bg-purple-500 rounded"
-              >
-                <Text className="text-white text-xs">Test</Text>
-              </TouchableOpacity>
+
             </View>
           ),
           headerTitleAlign: 'center' as const,
+          headerStyle: { backgroundColor: '#5e28ca' },
         }} 
       />
 
