@@ -356,7 +356,7 @@ export default function Home() {
                   </View>
                   <View>
                     <Text className="text-white text-lg font-semibold">Today&apos;s Commits</Text>
-                    <Text className="text-blue-100 text-sm">Tap to set goal</Text>
+                    <Text className="text-blue-100 text-sm">Tap to set goal and track</Text>
                   </View>
                 </View>
                 <View className="items-center">

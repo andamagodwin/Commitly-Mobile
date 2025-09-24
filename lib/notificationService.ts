@@ -58,13 +58,20 @@ export class NotificationService {
     }
 
     try {
-      // Get the Expo push token
-      const token = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
-      });
+      // Try to get Expo push token with project ID first
+      let token;
+      try {
+        token = await Notifications.getExpoPushTokenAsync({
+          projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        });
+      } catch (projectError) {
+        console.warn('Failed with project ID, trying without:', (projectError as Error).message || 'Unknown error');
+        // Fallback: try without project ID (works in development)
+        token = await Notifications.getExpoPushTokenAsync();
+      }
 
       this.expoPushToken = token.data;
-      console.log('📱 Expo Push Token:', token.data);
+      console.log('✅ Expo Push Token:', token.data);
 
       // Configure notification channel for Android
       if (Platform.OS === 'android') {
@@ -73,23 +80,7 @@ export class NotificationService {
 
       return token.data;
     } catch (error) {
-      console.error('Error getting push token:', error);
-      // For development, we can still return a mock token to continue testing
-      if (__DEV__) {
-        console.warn('Using development mode - trying alternative token generation');
-        try {
-          // Try without projectId for development
-          const token = await Notifications.getExpoPushTokenAsync();
-          this.expoPushToken = token.data;
-          console.log('📱 Development Push Token:', token.data);
-          return token.data;
-        } catch (fallbackError) {
-          console.error('Fallback token generation failed:', fallbackError);
-          const mockToken = 'development-token-' + Date.now();
-          this.expoPushToken = mockToken;
-          return mockToken;
-        }
-      }
+      console.error('❌ Failed to get Expo push token:', error);
       return null;
     }
   }
